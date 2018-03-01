@@ -1,0 +1,8 @@
+
+[package]
+name = "shzhrs"
+version = "0.1.0"
+authors = ["David Hewson <rust@daveid.co.uk>"]
+
+[dependencies]
+rand = "0.4.2"
