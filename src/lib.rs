@@ -12,13 +12,7 @@ enum Suit {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-enum Value {
-    Dragon,
-    Number(u8),
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-struct ValueCard(Suit, Value);
+struct ValueCard(Suit, u8);
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 struct FlowerCard;
@@ -26,13 +20,14 @@ struct FlowerCard;
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 enum Card {
     Value(ValueCard),
+    Dragon(Suit),
     Flower(FlowerCard),
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 enum Spare {
     Empty,
-    Card(ValueCard),
+    Card(Card),
     DragonStack(Suit),
 }
 
@@ -40,7 +35,6 @@ enum Spare {
 enum Place {
     Empty,
     Card(ValueCard),
-    DragonStack(Suit),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -58,12 +52,12 @@ fn all_the_cards() -> Vec<Card> {
 
     for &suit in &[Suit::Black, Suit::Green, Suit::Red] {
         for i in 0..9 {
-            cards.push(Card::Value(ValueCard(suit, Value::Number(i + 1))));
+            cards.push(Card::Value(ValueCard(suit, i + 1)));
         }
-        cards.push(Card::Value(ValueCard(suit, Value::Dragon)));
-        cards.push(Card::Value(ValueCard(suit, Value::Dragon)));
-        cards.push(Card::Value(ValueCard(suit, Value::Dragon)));
-        cards.push(Card::Value(ValueCard(suit, Value::Dragon)));
+        cards.push(Card::Dragon(suit));
+        cards.push(Card::Dragon(suit));
+        cards.push(Card::Dragon(suit));
+        cards.push(Card::Dragon(suit));
     }
 
     cards
@@ -91,7 +85,6 @@ fn new_game() -> Board {
     rng.shuffle(&mut cards);
 
     let mut pile = 0;
-
     for card in cards {
         board.piles[pile].push(card);
         pile += 1;
