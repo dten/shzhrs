@@ -11,27 +11,27 @@ enum Suit {
     Red,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq)]
 struct ValueCard(Suit, u8);
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq)]
 struct FlowerCard;
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq)]
 enum Card {
     Value(ValueCard),
     Dragon(Suit),
     Flower(FlowerCard),
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq)]
 enum Spare {
     Empty,
     Card(Card),
     DragonStack(Suit),
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq)]
 enum Place {
     Empty,
     Card(ValueCard),
@@ -65,9 +65,9 @@ fn all_the_cards() -> Vec<Card> {
 
 fn new_game() -> Board {
     let mut board = Board {
-        spares: [Spare::Empty; 3],
+        spares: [Spare::Empty, Spare::Empty, Spare::Empty],
         flower: None,
-        places: [Place::Empty; 3],
+        places: [Place::Empty, Place::Empty, Place::Empty],
         piles: [
             vec![],
             vec![],
