@@ -59,6 +59,12 @@ impl Default for Board {
     }
 }
 
+impl Board {
+    pub fn serialize(&self) -> String {
+        "".into()
+    }
+}
+
 fn all_the_cards() -> Vec<Card> {
     let mut cards = Vec::with_capacity(1 + (9 + 4) * 3);
 
@@ -92,12 +98,6 @@ fn new_game() -> Board {
     }
 
     board
-}
-
-impl Board {
-    pub fn serialize(&self) -> String {
-        "".into()
-    }
 }
 
 #[cfg(test)]
