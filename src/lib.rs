@@ -48,6 +48,26 @@ struct Board {
     piles: [SmallVec<[Card; 13]>; 8],
 }
 
+impl Default for Board {
+    fn default() -> Board {
+        Board {
+            spares: [Spare::Empty, Spare::Empty, Spare::Empty],
+            flower: None,
+            places: [Place::Empty, Place::Empty, Place::Empty],
+            piles: [
+                SmallVec::new(),
+                SmallVec::new(),
+                SmallVec::new(),
+                SmallVec::new(),
+                SmallVec::new(),
+                SmallVec::new(),
+                SmallVec::new(),
+                SmallVec::new(),
+            ],
+        }
+    }
+}
+
 fn all_the_cards() -> Vec<Card> {
     let mut cards = Vec::with_capacity(1 + (9 + 4) * 3);
 
@@ -67,21 +87,7 @@ fn all_the_cards() -> Vec<Card> {
 }
 
 fn new_game() -> Board {
-    let mut board = Board {
-        spares: [Spare::Empty, Spare::Empty, Spare::Empty],
-        flower: None,
-        places: [Place::Empty, Place::Empty, Place::Empty],
-        piles: [
-            SmallVec::new(),
-            SmallVec::new(),
-            SmallVec::new(),
-            SmallVec::new(),
-            SmallVec::new(),
-            SmallVec::new(),
-            SmallVec::new(),
-            SmallVec::new(),
-        ],
-    };
+    let mut board = Board::default();
 
     let mut cards = all_the_cards();
     let mut rng = rand::thread_rng();
