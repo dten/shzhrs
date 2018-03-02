@@ -2,7 +2,10 @@
 #![allow(dead_code)]
 
 extern crate rand;
+extern crate smallvec;
+
 use rand::Rng;
+use smallvec::SmallVec;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 enum Suit {
@@ -42,7 +45,7 @@ struct Board {
     spares: [Spare; 3],
     flower: Option<FlowerCard>,
     places: [Place; 3],
-    piles: [Vec<Card>; 8],
+    piles: [SmallVec<[Card; 13]>; 8],
 }
 
 fn all_the_cards() -> Vec<Card> {
@@ -69,14 +72,14 @@ fn new_game() -> Board {
         flower: None,
         places: [Place::Empty, Place::Empty, Place::Empty],
         piles: [
-            vec![],
-            vec![],
-            vec![],
-            vec![],
-            vec![],
-            vec![],
-            vec![],
-            vec![],
+            SmallVec::new(),
+            SmallVec::new(),
+            SmallVec::new(),
+            SmallVec::new(),
+            SmallVec::new(),
+            SmallVec::new(),
+            SmallVec::new(),
+            SmallVec::new(),
         ],
     };
 
