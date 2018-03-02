@@ -86,22 +86,22 @@ impl Board {
             match *card {
                 Card::Flower(ref f) => encode_flower(f),
                 Card::Dragon(ref suit) => format!("{}D", encode_suit(suit)),
-                Card::Value(ref v) => encode_valuecard(&v),
+                Card::Value(ref v) => encode_valuecard(v),
             }
         }
 
         fn encode_spare(spare: &Spare) -> String {
             match *spare {
                 Spare::Empty => String::new(),
-                Spare::Card(ref c) => encode_card(&c),
-                Spare::DragonStack(ref suit) => encode_dragon_stack(&suit),
+                Spare::Card(ref c) => encode_card(c),
+                Spare::DragonStack(ref suit) => encode_dragon_stack(suit),
             }
         }
 
         fn encode_place(place: &Place) -> String {
             match *place {
                 Place::Empty => String::new(),
-                Place::Card(ref vc) => encode_valuecard(&vc),
+                Place::Card(ref vc) => encode_valuecard(vc),
             }
         }
 
@@ -128,7 +128,7 @@ impl Board {
     }
 
     pub fn decode(s: &str) -> Result<Board, &'static str> {
-        let split = s.split(";").collect::<Vec<_>>();
+        let split = s.split(';').collect::<Vec<_>>();
 
         if split.len() != 15 {
             Err("split.length() != 15")?
@@ -193,8 +193,8 @@ impl Board {
             let mut pile = SmallVec::new();
 
             for i in 0..s.len() / 2 {
-                let start = i * 2;
-                let st = &s[start..start + 2];
+                let idx = i * 2;
+                let st = &s[idx..idx + 2];
                 pile.push(decode_card(st)?)
             }
 
