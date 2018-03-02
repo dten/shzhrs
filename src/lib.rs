@@ -7,40 +7,40 @@ extern crate smallvec;
 use rand::Rng;
 use smallvec::SmallVec;
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 enum Suit {
     Black,
     Green,
     Red,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 struct ValueCard(Suit, u8);
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 struct FlowerCard;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 enum Card {
     Value(ValueCard),
     Dragon(Suit),
     Flower(FlowerCard),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 enum Spare {
     Empty,
     Card(Card),
     DragonStack(Suit),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 enum Place {
     Empty,
     Card(ValueCard),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 struct Board {
     spares: [Spare; 3],
     flower: Option<FlowerCard>,
