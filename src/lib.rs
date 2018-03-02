@@ -97,6 +97,12 @@ fn new_game() -> Board {
     board
 }
 
+impl Board {
+    pub fn serialize(&self) -> String {
+        "".into()
+    }
+}
+
 #[cfg(test)]
 mod test {
     #[test]
@@ -107,7 +113,7 @@ mod test {
     #[test]
     fn new_games_are_fun() {
         let board = super::new_game();
-        println!("{:#?}", board);
+        println!("{}", board.serialize());
         assert_eq!(board.flower, None);
     }
 }
