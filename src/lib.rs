@@ -109,26 +109,22 @@ impl Board {
             pile.iter().map(encode_card).fold(String::new(), |a, c| a + &c)
         }
 
-        [
-            encode_spare(&self.spares[0]),
-            encode_spare(&self.spares[1]),
-            encode_spare(&self.spares[2]),
-            self.flower.as_ref().map(encode_flower).unwrap_or_else(String::new),
-            encode_place(&self.places[0]),
-            encode_place(&self.places[1]),
-            encode_place(&self.places[2]),
-            encode_pile(&self.piles[0]),
-            encode_pile(&self.piles[1]),
-            encode_pile(&self.piles[2]),
-            encode_pile(&self.piles[3]),
-            encode_pile(&self.piles[4]),
-            encode_pile(&self.piles[5]),
-            encode_pile(&self.piles[6]),
-            encode_pile(&self.piles[7]),
-        ].join(";")
+        let spares = self.spares
+            .iter().map(encode_spare);
+        let flower = self.flower
+            .iter().map(encode_flower);
+        let places = self.places
+            .iter().map(encode_place);
+        let piles = self.piles
+            .iter().map(encode_pile);
+
+        spares
+            .chain(flower)
+            .chain(places)
+            .chain(piles)
+            .fold(String::new(), |a, c| format!("{};{}", a , c))
     }
 }
-
 fn all_the_cards() -> Vec<Card> {
     let mut cards = Vec::with_capacity(1 + (9 + 4) * 3);
 
