@@ -54,16 +54,7 @@ impl Default for Board {
             spares: [Spare::Empty, Spare::Empty, Spare::Empty],
             flower: None,
             places: [Place::Empty, Place::Empty, Place::Empty],
-            piles: [
-                SmallVec::new(),
-                SmallVec::new(),
-                SmallVec::new(),
-                SmallVec::new(),
-                SmallVec::new(),
-                SmallVec::new(),
-                SmallVec::new(),
-                SmallVec::new(),
-            ],
+            piles: Default::default(),
         }
     }
 }
