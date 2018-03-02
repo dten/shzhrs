@@ -61,7 +61,7 @@ impl Default for Board {
 
 impl Board {
     pub fn encode(&self) -> String {
-        fn encode_suit (s: &Suit) -> &'static str {
+        fn encode_suit(s: &Suit) -> &'static str {
             match *s {
                 Suit::Black => "b",
                 Suit::Green => "g",
@@ -69,20 +69,20 @@ impl Board {
             }
         }
 
-        fn encode_dragon_stack (suit: &Suit) -> String {
+        fn encode_dragon_stack(suit: &Suit) -> String {
             format!("{s}D{s}D{s}D{s}D", s = encode_suit(suit))
         }
 
-        fn encode_flower (flower: &FlowerCard) -> String {
+        fn encode_flower(flower: &FlowerCard) -> String {
             "ff".to_string()
         }
 
-        fn encode_valuecard (vc: &ValueCard) -> String {
+        fn encode_valuecard(vc: &ValueCard) -> String {
             let &ValueCard(suit, value) = vc;
             format!("{}{}", encode_suit(&suit), value)
         }
 
-        fn encode_card (card: &Card) -> String {
+        fn encode_card(card: &Card) -> String {
             match *card {
                 Card::Flower(ref f) => encode_flower(f),
                 Card::Dragon(ref suit) => format!("{}D", encode_suit(suit)),
@@ -90,7 +90,7 @@ impl Board {
             }
         }
 
-        fn encode_spare (spare: &Spare) -> String {
+        fn encode_spare(spare: &Spare) -> String {
             match *spare {
                 Spare::Empty => String::new(),
                 Spare::Card(ref c) => encode_card(&c),
@@ -98,31 +98,29 @@ impl Board {
             }
         }
 
-        fn encode_place (place: &Place) -> String {
+        fn encode_place(place: &Place) -> String {
             match *place {
                 Place::Empty => String::new(),
                 Place::Card(ref vc) => encode_valuecard(&vc),
-            }            
+            }
         }
 
-        fn encode_pile (pile: &SmallVec<[Card; 13]>) -> String {
-            pile.iter().map(encode_card).fold(String::new(), |a, c| a + &c)
+        fn encode_pile(pile: &SmallVec<[Card; 13]>) -> String {
+            pile.iter()
+                .map(encode_card)
+                .fold(String::new(), |a, c| a + &c)
         }
 
-        let spares = self.spares
-            .iter().map(encode_spare);
-        let flower = self.flower
-            .iter().map(encode_flower);
-        let places = self.places
-            .iter().map(encode_place);
-        let piles = self.piles
-            .iter().map(encode_pile);
+        let spares = self.spares.iter().map(encode_spare);
+        let flower = self.flower.iter().map(encode_flower);
+        let places = self.places.iter().map(encode_place);
+        let piles = self.piles.iter().map(encode_pile);
 
         spares
             .chain(flower)
             .chain(places)
             .chain(piles)
-            .fold(String::new(), |a, c| format!("{};{}", a , c))
+            .fold(String::new(), |a, c| format!("{};{}", a, c))
     }
 }
 fn all_the_cards() -> Vec<Card> {
