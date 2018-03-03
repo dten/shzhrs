@@ -1,11 +1,13 @@
 #![allow(unused)]
 #![allow(dead_code)]
 
+extern crate pathfinding;
 extern crate rand;
 extern crate smallvec;
 
 use rand::Rng;
 use smallvec::SmallVec;
+use pathfinding::astar;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 enum Suit {
@@ -330,11 +332,12 @@ impl Board {
                 continue;
             }
 
+            let card_of_desire = Card::Dragon(suit_of_desire);
             let space_to_stack_to = match self.spares
                 .iter()
                 .enumerate()
                 .find(|&(_, spare)| {
-                    spare.is_empty() || spare.dragonstack_suit() == Some(&suit_of_desire)
+                    spare.is_empty() || *spare == Spare::Card(card_of_desire.clone())
                 })
                 .map(|(s, spare)| s)
             {
@@ -359,7 +362,6 @@ impl Board {
 
             // Wooh stack em up
             let mut new_board = self.clone();
-            let card_of_desire = Card::Dragon(suit_of_desire);
             // Purge spares
             for s in 0..new_board.spares.len() {
                 if new_board.spares[s] == Spare::Card(card_of_desire.clone()) {
@@ -547,6 +549,22 @@ impl Board {
 
         true
     }
+
+    pub fn work_to_do(&self) -> i64 {
+        let missing_value_cards = self.places
+            .iter()
+            .map(|p| match *p {
+                Place::Empty => 9 as i64,
+                Place::Card(ValueCard(_, v)) => (9 - v) as i64,
+            })
+            .sum::<i64>();
+        let missing_dragon_stacks = self.spares.len() as i64
+            - self.spares
+                .iter()
+                .filter_map(Spare::dragonstack_suit)
+                .count() as i64;
+        missing_value_cards + missing_dragon_stacks
+    }
 }
 
 fn all_the_cards() -> Vec<Card> {
@@ -582,6 +600,16 @@ fn new_game() -> Board {
     }
 
     board
+}
+
+fn solve(board: &Board) -> Option<(Vec<Board>, i64)> {
+    let mut neighbours = |b: &Board| {
+        println!("neighbours of {}", b.encode());
+        Board::neighbours(b).into_iter().map(|b| (b, 1))
+    };
+    let mut heuristic = |b: &Board| b.work_to_do();
+    let mut success = |b: &Board| b.is_a_goodn();
+    astar(board, neighbours, heuristic, success)
 }
 
 #[cfg(test)]
@@ -703,6 +731,19 @@ mod test {
     }
 
     #[test]
+    fn dragonstack_full_spares() {
+        assert_neighours(
+            "bD;bD;bD;;;;;;;;;r2bD;;;",
+            vec![
+                "bDbDbDbD;;;;;;;;;;;r2;;;", // stack em up
+                ";bD;bD;;;;;bD;;;;r2bD;;;",
+                "bD;;bD;;;;;bD;;;;r2bD;;;",
+                "bD;bD;;;;;;bD;;;;r2bD;;;",
+            ],
+        );
+    }
+
+    #[test]
     fn winner_winner() {
         assert!(
             Board::decode("rDrDrDrD;bDbDbDbD;gDgDgDgD;ff;b9;g9;r9;;;;;;;;")
@@ -715,4 +756,77 @@ mod test {
                 .is_a_goodn()
         );
     }
+
+    #[test]
+    fn solve_simple() {
+        let b = "rDrDrDrD;bDbDbDbD;gDgDgDgD;ff;b9;g9;r8;;;;;;;;r9";
+        let board = Board::decode(b).unwrap();
+        match solve(&board) {
+            None => panic!("couldn't solve {}", b),
+            Some((path, cost)) => {
+                assert_eq!(cost, 1);
+                assert_eq!(
+                    path.iter().map(Board::encode).collect::<Vec<_>>(),
+                    vec![
+                        "rDrDrDrD;bDbDbDbD;gDgDgDgD;ff;b9;g9;r8;;;;;;;;r9",
+                        "rDrDrDrD;bDbDbDbD;gDgDgDgD;ff;b9;g9;r9;;;;;;;;",
+                    ]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn solve_pascals_game() {
+        let b = "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD";
+        let board = Board::decode(b).unwrap();
+        match solve(&board) {
+            None => panic!("couldn't solve {}", b),
+            Some((path, cost)) => {
+                assert_eq!(cost, 38);
+                assert_eq!(
+                    path.iter().map(Board::encode).collect::<Vec<_>>(),
+                    vec![
+                        "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7b6;bDg5rD;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;;ff;;;;r6b5;r4g9bDr7b6;bDg5;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;;ff;;;;r6b5;r4g9bDr7b6g5;bD;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;;;;r6b5;r4g9bDr7b6g5;;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1b1;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b1;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;g1;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;g1;;;r4g9bDr7b6g5;r8b7r6b5;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;g1;;r9b8;r4g9bDr7b6g5;r8b7r6b5;b3g2;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;g2;;r9b8;r4g9bDr7b6g5;r8b7r6b5;b3;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b3;g2;;r9b8;r4g9bDr7b6g5;r8b7r6b5;;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b3;g3;;r9b8;r4g9bDr7b6g5;r8b7r6b5;;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b3;g3;;r9b8;r4g9bD;r8b7r6b5;r7b6g5;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b3;g3;;r9b8;r4g9;r8b7r6b5;r7b6g5;r3rDg8g6;rD;g7g4b4;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b4;g3;;r9b8;r4g9;r8b7r6b5;r7b6g5;r3rDg8g6;rD;g7g4;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b5;g3;;r9b8;r4g9;r8b7r6;r7b6g5;r3rDg8g6;rD;g7g4;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b5;g4;;r9b8;r4g9;r8b7r6;r7b6g5;r3rDg8g6;rD;g7;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b5;g5;;r9b8;r4g9;r8b7r6;r7b6;r3rDg8g6;rD;g7;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b6;g5;;r9b8;r4g9;r8b7r6;r7;r3rDg8g6;rD;g7;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b6;g6;;r9b8;r4g9;r8b7r6;r7;r3rDg8;rD;g7;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b6;g7;;r9b8;r4g9;r8b7r6;r7;r3rDg8;rD;;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b6;g8;;r9b8;r4g9;r8b7r6;r7;r3rD;rD;;b9r2r5r1rD", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g8;;r9b8;r4g9;r8b7r6;r7;r3;;;b9r2r5r1", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;;r9b8;r4;r8b7r6;r7;r3;;;b9r2r5r1", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r9b8;r4;r8b7r6;r7;r3;;;b9r2r5", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r9b8;r4;r8b7r6;r7;r3;r5;;b9r2", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r2;r9b8;r4;r8b7r6;r7;r3;r5;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r3;r9b8;r4;r8b7r6;r7;;r5;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r4;r9b8;;r8b7r6;r7;;r5;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r5;r9b8;;r8b7r6;r7;;;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r6;r9b8;;r8b7;r7;;;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r6;r9b8;;r8;r7;;;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r6;r9;;r8;r7;;;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r6;r9;;r8;r7;;;;", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r7;r9;;r8;;;;;", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;r9;;;;;;;", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r9;;;;;;;;"
+                      ]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn solve_full_game() {
+        let b = "gD;gD;gD;;;;;r6b5gDff;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD";
+
+        assert_neighours(
+            "gD;gD;gD;;;;;r6b5gDff;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
+            vec![
+                "gD;gD;gD;ff;;;;r6b5gD;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", // must place flower
+            ],
+        );
+        assert_neighours(
+            "gD;gD;gD;ff;;;;r6b5gD;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
+            vec![
+                "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", // goal is stack dragons
+                "gD;gD;gD;ff;;;;r6b5gD;r4g9bD;bDg5rDb6;b3g2r9b8r7;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
+                "gD;gD;gD;ff;;;;r6b5gD;r4g9bDr7b6;bDg5rD;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD"
+            ],
+        );
+
+        let board = Board::decode(b).unwrap();
+        match solve(&board) {
+            None => panic!("couldn't solve {}", board.encode()),
+            Some((path, cost)) => {}
+        }
+    }
+
+    // #[test]
+    // fn solve_random() {
+    //     let board = new_game();
+    //     println!("solving {:?}", board.encode());
+    //     match solve(&board) {
+    //         None => panic!("couldn't solve {}", board.encode()),
+    //         Some((path, cost)) => {}
+    //     }
+    // }
 }

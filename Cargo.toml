@@ -1,4 +1,3 @@
-
 [package]
 name = "shzhrs"
 version = "0.1.0"
@@ -7,3 +6,4 @@ authors = ["David Hewson <rust@daveid.co.uk>"]
 [dependencies]
 rand = "0.4.2"
 smallvec = "0.6.0"
+pathfinding = "0.6.11"
