@@ -320,6 +320,40 @@ impl Board {
             }
         }
 
+        // cards to top right
+        for (j, place) in self.places.iter().enumerate() {
+            // Each place has a card of interest
+            let target = match *place {
+                Place::Empty => ValueCard(Suit::from_usize(j), 1),
+                Place::Card(ValueCard(suit, i)) => ValueCard(suit, i + 1),
+            };
+            // Maybe what we want is in piles
+            for (i, pile) in self.piles.iter().enumerate() {
+                match pile.last() {
+                    Some(&Card::Value(ref v)) if v == &target => {
+                        let mut new_board = self.clone();
+                        new_board.piles[i].pop();
+                        new_board.places[j] = Place::Card(target.clone());
+                        n.push(new_board)
+                    }
+                    _ => {}
+                }
+            }
+            // Maybe what we want is in spares
+            for (i, spare) in self.spares.iter().enumerate() {
+                match *spare {
+                    Spare::Card(Card::Value(ref v)) if v == &target => {
+                        let mut new_board = self.clone();
+                        new_board.spares[i] = Spare::Empty;
+                        new_board.places[j] = Place::Card(target.clone());
+                        n.push(new_board);
+                        return n; // Flower is the only choice
+                    }
+                    _ => {}
+                }
+            }
+        }
+
         // stack dragons
         for i in 0..3 {
             let suit_of_desire = Suit::from_usize(i);
@@ -377,58 +411,6 @@ impl Board {
             // Stack stack stack
             new_board.spares[space_to_stack_to] = Spare::DragonStack(suit_of_desire);
             n.push(new_board);
-        }
-
-        // cards to top right
-        for (j, place) in self.places.iter().enumerate() {
-            // Each place has a card of interest
-            let target = match *place {
-                Place::Empty => ValueCard(Suit::from_usize(j), 1),
-                Place::Card(ValueCard(suit, i)) => ValueCard(suit, i + 1),
-            };
-            // Maybe what we want is in piles
-            for (i, pile) in self.piles.iter().enumerate() {
-                match pile.last() {
-                    Some(&Card::Value(ref v)) if v == &target => {
-                        let mut new_board = self.clone();
-                        new_board.piles[i].pop();
-                        new_board.places[j] = Place::Card(target.clone());
-                        n.push(new_board)
-                    }
-                    _ => {}
-                }
-            }
-            // Maybe what we want is in spares
-            for (i, spare) in self.spares.iter().enumerate() {
-                match *spare {
-                    Spare::Card(Card::Value(ref v)) if v == &target => {
-                        let mut new_board = self.clone();
-                        new_board.spares[i] = Spare::Empty;
-                        new_board.places[j] = Place::Card(target.clone());
-                        n.push(new_board);
-                        return n; // Flower is the only choice
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        // move to spare from piles
-        for (i, pile) in self.piles.iter().enumerate() {
-            for (j, spare) in self.spares.iter().enumerate() {
-                if *spare == Spare::Empty {
-                    match pile.last() {
-                        Some(card) => {
-                            let mut new_board = self.clone();
-                            let moved = new_board.piles[i].pop().unwrap();
-                            new_board.spares[j] = Spare::Card(moved);
-                            n.push(new_board)
-                        }
-                        _ => {}
-                    }
-                    break; // Only care about first empty spare
-                }
-            }
         }
 
         // move from spares to piles
@@ -512,6 +494,24 @@ impl Board {
                         }
                     }
                     _ => break,
+                }
+            }
+        }
+
+        // move to spare from piles
+        for (i, pile) in self.piles.iter().enumerate() {
+            for (j, spare) in self.spares.iter().enumerate() {
+                if *spare == Spare::Empty {
+                    match pile.last() {
+                        Some(card) => {
+                            let mut new_board = self.clone();
+                            let moved = new_board.piles[i].pop().unwrap();
+                            new_board.spares[j] = Spare::Card(moved);
+                            n.push(new_board)
+                        }
+                        _ => {}
+                    }
+                    break; // Only care about first empty spare
                 }
             }
         }
@@ -604,7 +604,7 @@ fn new_game() -> Board {
 
 fn solve(board: &Board) -> Option<(Vec<Board>, i64)> {
     let mut neighbours = |b: &Board| {
-        println!("neighbours of {}", b.encode());
+        //println!("neighbours of {}", b.encode());
         Board::neighbours(b).into_iter().map(|b| (b, 1))
     };
     let mut heuristic = |b: &Board| b.work_to_do();
@@ -677,8 +677,8 @@ mod test {
             ";;;;;;;;;;;;b2b1;;",
             vec![
                 ";;;;b1;;;;;;;;b2;;", // place b1
-                "b1;;;;;;;;;;;;b2;;", //spare b1
                 ";;;;;;;b1;;;;;b2;;", // unstack b1
+                "b1;;;;;;;;;;;;b2;;", //spare b1
             ],
         );
         assert_neighours("b1;;;;;;;;;;;;;;", vec![";;;;b1;;;;;;;;;;"]);
@@ -689,10 +689,10 @@ mod test {
         assert_neighours(
             "b5;g5;;;;;;g6;;;;;;;",
             vec![
-                "b5;g5;g6;;;;;;;;;;;;", // g6 from pile to remaining spare
                 ";g5;;;;;;g6b5;;;;;;;", // stack b5 on g6
                 ";g5;;;;;;g6;b5;;;;;;", // b5 to empty pile
                 "b5;;;;;;;g6;g5;;;;;;", // g5 to empty pile
+                "b5;g5;g6;;;;;;;;;;;;", // g6 from pile to remaining spare
             ],
         );
     }
@@ -703,10 +703,10 @@ mod test {
             ";;;;;;;;;;;;r2b1;g3;",
             vec![
                 ";;;;b1;;;;;;;;r2;g3;",
-                "b1;;;;;;;;;;;;r2;g3;",
-                "g3;;;;;;;;;;;;r2b1;;",
                 ";;;;;;;b1;;;;;r2;g3;",
                 ";;;;;;;;;;;;;g3r2b1;", // stack r2b1 onto g3
+                "b1;;;;;;;;;;;;r2;g3;",
+                "g3;;;;;;;;;;;;r2b1;;",
             ],
         );
     }
@@ -716,16 +716,16 @@ mod test {
         assert_neighours(
             ";;rD;;;;;;;rD;rD;rD;r2b1;g3;",
             vec![
-                "rDrDrDrD;;;;;;;;;;;;r2b1;g3;", // stack em up
                 ";;rD;;b1;;;;;rD;rD;rD;r2;g3;",
+                "rDrDrDrD;;;;;;;;;;;;r2b1;g3;", // stack em up
+                ";;;;;;;rD;;rD;rD;rD;r2b1;g3;",
+                ";;rD;;;;;b1;;rD;rD;rD;r2;g3;",
+                ";;rD;;;;;;;rD;rD;rD;;g3r2b1;",
                 "rD;;rD;;;;;;;;rD;rD;r2b1;g3;",
                 "rD;;rD;;;;;;;rD;;rD;r2b1;g3;",
                 "rD;;rD;;;;;;;rD;rD;;r2b1;g3;",
                 "b1;;rD;;;;;;;rD;rD;rD;r2;g3;",
                 "g3;;rD;;;;;;;rD;rD;rD;r2b1;;",
-                ";;;;;;;rD;;rD;rD;rD;r2b1;g3;",
-                ";;rD;;;;;b1;;rD;rD;rD;r2;g3;",
-                ";;rD;;;;;;;rD;rD;rD;;g3r2b1;",
             ],
         );
     }
@@ -787,8 +787,46 @@ mod test {
                 assert_eq!(
                     path.iter().map(Board::encode).collect::<Vec<_>>(),
                     vec![
-                        "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7b6;bDg5rD;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;;ff;;;;r6b5;r4g9bDr7b6;bDg5;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;;ff;;;;r6b5;r4g9bDr7b6g5;bD;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;;;;r6b5;r4g9bDr7b6g5;;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1b1;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b1;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3b2;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;g1;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;g1;;;r4g9bDr7b6g5;r8b7r6b5;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;g1;;r9b8;r4g9bDr7b6g5;r8b7r6b5;b3g2;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b2;g2;;r9b8;r4g9bDr7b6g5;r8b7r6b5;b3;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b3;g2;;r9b8;r4g9bDr7b6g5;r8b7r6b5;;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b3;g3;;r9b8;r4g9bDr7b6g5;r8b7r6b5;;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD", "gDgDgDgD;rD;bD;ff;b3;g3;;r9b8;r4g9bD;r8b7r6b5;r7b6g5;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b3;g3;;r9b8;r4g9;r8b7r6b5;r7b6g5;r3rDg8g6;rD;g7g4b4;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b4;g3;;r9b8;r4g9;r8b7r6b5;r7b6g5;r3rDg8g6;rD;g7g4;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b5;g3;;r9b8;r4g9;r8b7r6;r7b6g5;r3rDg8g6;rD;g7g4;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b5;g4;;r9b8;r4g9;r8b7r6;r7b6g5;r3rDg8g6;rD;g7;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b5;g5;;r9b8;r4g9;r8b7r6;r7b6;r3rDg8g6;rD;g7;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b6;g5;;r9b8;r4g9;r8b7r6;r7;r3rDg8g6;rD;g7;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b6;g6;;r9b8;r4g9;r8b7r6;r7;r3rDg8;rD;g7;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b6;g7;;r9b8;r4g9;r8b7r6;r7;r3rDg8;rD;;b9r2r5r1rD", "gDgDgDgD;rD;bDbDbDbD;ff;b6;g8;;r9b8;r4g9;r8b7r6;r7;r3rD;rD;;b9r2r5r1rD", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g8;;r9b8;r4g9;r8b7r6;r7;r3;;;b9r2r5r1", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;;r9b8;r4;r8b7r6;r7;r3;;;b9r2r5r1", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r9b8;r4;r8b7r6;r7;r3;;;b9r2r5", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r9b8;r4;r8b7r6;r7;r3;r5;;b9r2", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r2;r9b8;r4;r8b7r6;r7;r3;r5;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r3;r9b8;r4;r8b7r6;r7;;r5;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r4;r9b8;;r8b7r6;r7;;r5;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r5;r9b8;;r8b7r6;r7;;;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r6;r9b8;;r8b7;r7;;;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r6;r9b8;;r8;r7;;;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r6;r9;;r8;r7;;;;b9", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r6;r9;;r8;r7;;;;", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r7;r9;;r8;;;;;", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;r9;;;;;;;", "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r9;;;;;;;;"
-                      ]
+                        "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;;;ff;;;;;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7r6b5;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;;;ff;;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;;;ff;b1;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;;;ff;b2;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;;;ff;b2;g1;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6;bDg5rD;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6;bDg5;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;bD;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;r9b8;b3g2;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b2;g2;;r8b7r6b5;r4g9bDr7b6g5;r9b8;b3;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b3;g2;;r8b7r6b5;r4g9bDr7b6g5;r9b8;;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b3;g3;;r8b7r6b5;r4g9bDr7b6g5;r9b8;;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b3;g3;;r8b7r6b5;r4g9bD;r9b8r7b6g5;;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b3;g3;;r8b7r6b5;r4g9;r9b8r7b6g5;;r3rDg8g6;rD;g7g4b4;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b4;g3;;r8b7r6b5;r4g9;r9b8r7b6g5;;r3rDg8g6;rD;g7g4;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g3;;r8b7r6;r4g9;r9b8r7b6g5;;r3rDg8g6;rD;g7g4;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g4;;r8b7r6;r4g9;r9b8r7b6g5;;r3rDg8g6;rD;g7;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g5;;r8b7r6;r4g9;r9b8r7b6;;r3rDg8g6;rD;g7;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g5;;r8b7r6;r4g9;r9b8r7;;r3rDg8g6;rD;g7;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g6;;r8b7r6;r4g9;r9b8r7;;r3rDg8;rD;g7;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g7;;r8b7r6;r4g9;r9b8r7;;r3rDg8;rD;;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g8;;r8b7r6;r4g9;r9b8r7;;r3rD;rD;;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g9;;r8b7r6;r4;r9b8r7;;r3rD;rD;;b9r2r5r1rD",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;;r8b7r6;r4;r9b8r7;;r3;;;b9r2r5r1",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r8b7r6;r4;r9b8r7;;r3;;;b9r2r5",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r8b7r6;r4;r9b8r7;r5;r3;;;b9r2",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r2;r8b7r6;r4;r9b8r7;r5;r3;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r3;r8b7r6;r4;r9b8r7;r5;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r4;r8b7r6;;r9b8r7;r5;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r5;r8b7r6;;r9b8r7;;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r6;r8b7;;r9b8r7;;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r6;r8;;r9b8r7;;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r7;r8;;r9b8;;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r7;r8;;r9;;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r7;r8;;r9;;;;;",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;;;r9;;;;;",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r9;;;;;;;;"
+                    ]
                 );
             }
         }
