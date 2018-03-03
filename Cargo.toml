@@ -7,3 +7,6 @@ authors = ["David Hewson <rust@daveid.co.uk>"]
 rand = "0.4.2"
 smallvec = "0.6.0"
 pathfinding = "0.6.11"
+
+[dev-dependencies]
+rayon = "1.0.0"
