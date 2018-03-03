@@ -10,7 +10,7 @@ use smallvec::SmallVec;
 use pathfinding::astar;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
-enum Suit {
+pub enum Suit {
     Black,
     Green,
     Red,
@@ -35,7 +35,7 @@ impl Suit {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-struct ValueCard(Suit, u8);
+pub struct ValueCard(Suit, u8);
 
 trait GoesOn {
     fn goes_on(&self, b: &Self) -> bool;
@@ -55,10 +55,10 @@ impl GoesOn for ValueCard {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-struct FlowerCard;
+pub struct FlowerCard;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-enum Card {
+pub enum Card {
     Value(ValueCard),
     Dragon(Suit),
     Flower(FlowerCard),
@@ -86,7 +86,7 @@ impl GoesOn for Card {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-enum Spare {
+pub enum Spare {
     Empty,
     Card(Card),
     DragonStack(Suit),
@@ -109,13 +109,13 @@ impl Spare {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-enum Place {
+pub enum Place {
     Empty,
     Card(ValueCard),
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-struct Board {
+pub struct Board {
     spares: [Spare; 3],
     flower: Option<FlowerCard>,
     places: [Place; 3],
@@ -601,7 +601,7 @@ fn all_the_cards() -> Vec<Card> {
     cards
 }
 
-fn new_game() -> Board {
+pub fn new_game() -> Board {
     let mut board = Board::default();
 
     let mut cards = all_the_cards();
@@ -618,7 +618,7 @@ fn new_game() -> Board {
     board
 }
 
-fn solve(board: &Board) -> Option<(Vec<Board>, i64)> {
+pub fn solve(board: &Board) -> Option<(Vec<Board>, i64)> {
     let mut neighbours = |b: &Board| {
         //println!("neighbours of {}", b.encode());
         let n = Board::neighbours(b);
@@ -879,16 +879,6 @@ mod test {
         );
 
         let board = Board::decode(b).unwrap();
-        match solve(&board) {
-            None => panic!("couldn't solve {}", board.encode()),
-            Some((path, cost)) => {}
-        }
-    }
-
-    #[test]
-    fn solve_random() {
-        let board = new_game();
-        println!("solving {:?}", board.encode());
         match solve(&board) {
             None => panic!("couldn't solve {}", board.encode()),
             Some((path, cost)) => {}
