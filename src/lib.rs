@@ -621,7 +621,10 @@ fn new_game() -> Board {
 fn solve(board: &Board) -> Option<(Vec<Board>, i64)> {
     let mut neighbours = |b: &Board| {
         //println!("neighbours of {}", b.encode());
-        Board::neighbours(b).into_iter().map(|b| (b, 1))
+        let n = Board::neighbours(b);
+        let count = n.len();
+        n.into_iter()
+            .map(move |b| (b, if count == 1 { 0 } else { 1 }))
     };
     let mut heuristic = |b: &Board| b.work_to_do();
     let mut success = |b: &Board| b.is_a_goodn();
@@ -783,7 +786,7 @@ mod test {
         match solve(&board) {
             None => panic!("couldn't solve {}", b),
             Some((path, cost)) => {
-                assert_eq!(cost, 1);
+                assert_eq!(cost, 0);
                 assert_eq!(
                     path.iter().map(Board::encode).collect::<Vec<_>>(),
                     vec![
@@ -802,48 +805,53 @@ mod test {
         match solve(&board) {
             None => panic!("couldn't solve {}", b),
             Some((path, cost)) => {
-                assert_eq!(cost, 38);
+                assert_eq!(cost, 16);
                 assert_eq!(
                     path.iter().map(Board::encode).collect::<Vec<_>>(),
                     vec![
                         "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;;;;;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7r6b5;g7g4b4bDg3b2;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1;g7g4b4bDg3b2;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;b1;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3b2;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;b2;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;b2;g1;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6;bDg5rD;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6;bDg5;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;bD;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;r9b8;b3g2;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b2;g2;;r8b7r6b5;r4g9bDr7b6g5;r9b8;b3;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b3;g2;;r8b7r6b5;r4g9bDr7b6g5;r9b8;;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b3;g3;;r8b7r6b5;r4g9bDr7b6g5;r9b8;;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b3;g3;;r8b7r6b5;r4g9bD;r9b8;r7b6g5;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b3;g3;;r8b7r6b5;r4g9;r9b8;r7b6g5;r3rDg8g6;rD;g7g4b4;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b4;g3;;r8b7r6b5;r4g9;r9b8;r7b6g5;r3rDg8g6;rD;g7g4;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g3;;r8b7r6;r4g9;r9b8;r7b6g5;r3rDg8g6;rD;g7g4;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g4;;r8b7r6;r4g9;r9b8;r7b6g5;r3rDg8g6;rD;g7;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g5;;r8b7r6;r4g9;r9b8;r7b6;r3rDg8g6;rD;g7;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g5;;r8b7r6;r4g9;r9b8;r7;r3rDg8g6;rD;g7;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g6;;r8b7r6;r4g9;r9b8;r7;r3rDg8;rD;g7;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g7;;r8b7r6;r4g9;r9b8;r7;r3rDg8;rD;;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g8;;r8b7r6;r4g9;r9b8;r7;r3rD;rD;;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g9;;r8b7r6;r4;r9b8;r7;r3rD;rD;;b9r2r5r1rD",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;;r8b7r6;r4;r9b8;r7;r3;;;b9r2r5r1",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r8b7r6;r4;r9b8;r7;r3;;;b9r2r5",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r8b7r6;r4;r9b8;r7;r3;r5;;b9r2",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r2;r8b7r6;r4;r9b8;r7;r3;r5;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r3;r8b7r6;r4;r9b8;r7;;r5;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r4;r8b7r6;;r9b8;r7;;r5;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r5;r8b7r6;;r9b8;r7;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r6;r8b7;;r9b8;r7;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r6;r8;;r9b8;r7;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r6;r8;;r9;r7;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r6;r8;;r9;r7;;;;",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r7;r8;;r9;;;;;",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;;;r9;;;;;",
+                        "gDgDgDgD;rD;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1",
+                        "gDgDgDgD;rD;;ff;;;r1;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5",
+                        "gDgDgDgD;rD;r5;ff;;;r1;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2",
+                        "gDgDgDgD;rD;r5;ff;;;r2;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9",
+                        "gDgDgDgD;rD;r5;ff;;;r2;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1;g7g4b4bDg3b2;b9r8b7",
+                        "gDgDgDgD;rD;r5;ff;b1;;r2;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3b2;b9r8b7",
+                        "gDgDgDgD;rD;r5;ff;b2;;r2;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3;b9r8b7",
+                        "gDgDgDgD;rD;r5;ff;b2;g1;r2;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r8b7",
+                        "gDgDgDgD;rD;r5;ff;b2;g1;r2;;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r8b7r6b5",
+                        "gDgDgDgD;rD;r5;ff;b2;g1;r2;r9b8;r4g9bDr7;bDg5rDb6;b3g2;r3rDg8g6bD;rD;g7g4b4bDg3;b9r8b7r6b5",
+                        "gDgDgDgD;rD;r5;ff;b2;g2;r2;r9b8;r4g9bDr7;bDg5rDb6;b3;r3rDg8g6bD;rD;g7g4b4bDg3;b9r8b7r6b5",
+                        "gDgDgDgD;rD;r5;ff;b3;g2;r2;r9b8;r4g9bDr7;bDg5rDb6;;r3rDg8g6bD;rD;g7g4b4bDg3;b9r8b7r6b5",
+                        "gDgDgDgD;rD;r5;ff;b3;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;;r3rDg8g6bD;rD;g7g4b4bD;b9r8b7r6b5",
+                        "gDgDgDgD;rD;;ff;b3;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7g4b4bD;b9r8b7r6b5",
+                        "gDgDgDgD;rD;bD;ff;b3;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7g4b4;b9r8b7r6b5",
+                        "gDgDgDgD;rD;bD;ff;b4;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7g4;b9r8b7r6b5",
+                        "gDgDgDgD;rD;bD;ff;b5;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7g4;b9r8b7r6",
+                        "gDgDgDgD;rD;bD;ff;b5;g4;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7;b9r8b7r6",
+                        "gDgDgDgD;rD;bD;ff;b6;g4;r2;r9b8;r4g9bDr7;bDg5rD;r5;r3rDg8g6bD;rD;g7;b9r8b7r6",
+                        "gDgDgDgD;rD;bD;ff;b6;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;g7;b9r8b7r6",
+                        "gDgDgDgD;rD;bD;ff;b6;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;g7r6;b9r8b7",
+                        "gDgDgDgD;rD;bD;ff;b7;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;g7r6;b9r8",
+                        "gDgDgDgD;rD;bD;ff;b7;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;;b9r8g7r6",
+                        "gDgDgDgD;;bD;ff;b7;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;rD;b9r8g7r6",
+                        "gDgDgDgD;rD;bD;ff;b7;g4;r2;r9b8r7;r4g9bD;bDg5;r5;r3rDg8g6bD;rD;rD;b9r8g7r6",
+                        "gDgDgDgD;rD;bD;ff;b7;g5;r2;r9b8r7;r4g9bD;bD;r5;r3rDg8g6bD;rD;rD;b9r8g7r6",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b7;g5;r2;r9b8r7;r4g9;;r5;r3rDg8g6;rD;rD;b9r8g7r6",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b7;g6;r2;r9b8r7;r4g9;;r5;r3rDg8;rD;rD;b9r8g7r6",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b7;g6;r2;r9b8r7;r4g9;g8;r5;r3rD;rD;rD;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r2;r9b8r7;r4g9;g8;r5;r3;;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r3;r9b8r7;r4g9;g8;r5;;;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r3;r9b8r7;r4;g8;r5;g9;;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r4;r9b8r7;;g8;r5;g9;;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r5;r9b8r7;;g8;;g9;;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r6;r9b8r7;;g8;;g9;;;b9r8g7",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g7;r6;r9b8r7;;g8;;g9;;;b9r8",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g8;r6;r9b8r7;;;;g9;;;b9r8",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r6;r9b8r7;;;;;;;b9r8",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r7;r9b8;;;;;;;b9r8",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r7;r9;;;;;;;b9r8",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r8;r9;;;;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;r9;;;;;;;",
                         "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r9;;;;;;;;"
                     ]
                 );
@@ -877,13 +885,13 @@ mod test {
         }
     }
 
-    // #[test]
-    // fn solve_random() {
-    //     let board = new_game();
-    //     println!("solving {:?}", board.encode());
-    //     match solve(&board) {
-    //         None => panic!("couldn't solve {}", board.encode()),
-    //         Some((path, cost)) => {}
-    //     }
-    // }
+    #[test]
+    fn solve_random() {
+        let board = new_game();
+        println!("solving {:?}", board.encode());
+        match solve(&board) {
+            None => panic!("couldn't solve {}", board.encode()),
+            Some((path, cost)) => {}
+        }
+    }
 }
