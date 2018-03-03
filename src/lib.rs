@@ -14,33 +14,105 @@ enum Suit {
     Red,
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+impl Suit {
+    pub fn to_usize(&self) -> usize {
+        match *self {
+            Suit::Black => 0,
+            Suit::Green => 1,
+            Suit::Red => 2,
+        }
+    }
+    pub fn from_usize(i: usize) -> Suit {
+        match i {
+            0 => Suit::Black,
+            1 => Suit::Green,
+            2 => Suit::Red,
+            _ => panic!("oi what you playin at"),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 struct ValueCard(Suit, u8);
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+trait GoesOn {
+    fn goes_on(&self, b: &Self) -> bool;
+}
+
+impl GoesOn for ValueCard {
+    fn goes_on(&self, b: &ValueCard) -> bool {
+        use Card::*;
+        let success = match (self, b) {
+            (&ValueCard(suit_a, v_a), &ValueCard(suit_b, v_b)) => {
+                suit_a != suit_b && v_a + 1 == v_b
+            }
+            _ => false,
+        };
+        success
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 struct FlowerCard;
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 enum Card {
     Value(ValueCard),
     Dragon(Suit),
     Flower(FlowerCard),
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+impl Card {
+    pub fn suit(&self) -> Option<&Suit> {
+        use Card::*;
+        match *self {
+            Value(ValueCard(ref suit, _)) => Some(suit),
+            Dragon(ref suit) => Some(suit),
+            _ => None,
+        }
+    }
+}
+
+impl GoesOn for Card {
+    fn goes_on(&self, b: &Self) -> bool {
+        use Card::*;
+        match (self, b) {
+            (&Value(ref vc_a), &Value(ref vc_b)) => vc_a.goes_on(vc_b),
+            _ => false,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 enum Spare {
     Empty,
     Card(Card),
     DragonStack(Suit),
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+impl Spare {
+    pub fn is_empty(&self) -> bool {
+        match *self {
+            Spare::Empty => true,
+            _ => false,
+        }
+    }
+
+    pub fn dragonstack_suit(&self) -> Option<&Suit> {
+        match *self {
+            Spare::DragonStack(ref suit) => Some(suit),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 enum Place {
     Empty,
     Card(ValueCard),
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 struct Board {
     spares: [Spare; 3],
     flower: Option<FlowerCard>,
@@ -225,6 +297,256 @@ impl Board {
             ],
         })
     }
+
+    pub fn neighbours(&self) -> Vec<Board> {
+        let mut n: Vec<Board> = vec![];
+
+        // move flower to flowerspot
+        if self.flower == None {
+            // Look for flower on top of piles
+            for (i, pile) in self.piles.iter().enumerate() {
+                match pile.last() {
+                    Some(&Card::Flower(..)) => {
+                        let mut new_board = self.clone();
+                        new_board.piles[i].pop();
+                        new_board.flower = Some(FlowerCard);
+                        n.push(new_board);
+                        return n; // Flower is the only choice
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // stack dragons
+        for i in 0..3 {
+            let suit_of_desire = Suit::from_usize(i);
+            if self.spares
+                .iter()
+                .filter_map(Spare::dragonstack_suit)
+                .any(|suit| suit == &suit_of_desire)
+            {
+                // already stacked
+                continue;
+            }
+
+            let space_to_stack_to = match self.spares
+                .iter()
+                .enumerate()
+                .find(|&(_, spare)| {
+                    spare.is_empty() || spare.dragonstack_suit() == Some(&suit_of_desire)
+                })
+                .map(|(s, spare)| s)
+            {
+                Some(s) => s,
+                None => continue, // there's nowhere to stack this dragon
+            };
+
+            let mut visible = 0;
+            visible += self.spares
+                .iter()
+                .filter(|spare| **spare == Spare::Card(Card::Dragon(suit_of_desire)))
+                .count();
+            visible += self.piles
+                .iter()
+                .filter_map(|p| p.last())
+                .filter(|card| **card == Card::Dragon(suit_of_desire))
+                .count();
+            if visible != 4 {
+                // sad times, dragons not on top
+                continue;
+            }
+
+            // Wooh stack em up
+            let mut new_board = self.clone();
+            let card_of_desire = Card::Dragon(suit_of_desire);
+            // Purge spares
+            for s in 0..new_board.spares.len() {
+                if new_board.spares[s] == Spare::Card(card_of_desire.clone()) {
+                    new_board.spares[s] = Spare::Empty;
+                }
+            }
+            // Purge piles
+            for p in 0..new_board.piles.len() {
+                if new_board.piles[p].last() == Some(&card_of_desire.clone()) {
+                    new_board.piles[p].pop();
+                }
+            }
+            // Stack stack stack
+            new_board.spares[space_to_stack_to] = Spare::DragonStack(suit_of_desire);
+            n.push(new_board);
+        }
+
+        // cards to top right
+        for (j, place) in self.places.iter().enumerate() {
+            // Each place has a card of interest
+            let target = match *place {
+                Place::Empty => ValueCard(Suit::from_usize(j), 1),
+                Place::Card(ValueCard(suit, i)) => ValueCard(suit, i + 1),
+            };
+            // Maybe what we want is in piles
+            for (i, pile) in self.piles.iter().enumerate() {
+                match pile.last() {
+                    Some(&Card::Value(ref v)) if v == &target => {
+                        let mut new_board = self.clone();
+                        new_board.piles[i].pop();
+                        new_board.places[j] = Place::Card(target.clone());
+                        n.push(new_board)
+                    }
+                    _ => {}
+                }
+            }
+            // Maybe what we want is in spares
+            for (i, spare) in self.spares.iter().enumerate() {
+                match *spare {
+                    Spare::Card(Card::Value(ref v)) if v == &target => {
+                        let mut new_board = self.clone();
+                        new_board.spares[i] = Spare::Empty;
+                        new_board.places[j] = Place::Card(target.clone());
+                        n.push(new_board);
+                        return n; // Flower is the only choice
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // move to spare from piles
+        for (i, pile) in self.piles.iter().enumerate() {
+            for (j, spare) in self.spares.iter().enumerate() {
+                if *spare == Spare::Empty {
+                    match pile.last() {
+                        Some(card) => {
+                            let mut new_board = self.clone();
+                            let moved = new_board.piles[i].pop().unwrap();
+                            new_board.spares[j] = Spare::Card(moved);
+                            n.push(new_board)
+                        }
+                        _ => {}
+                    }
+                    break; // Only care about first empty spare
+                }
+            }
+        }
+
+        // move from spares to piles
+        for (j, spare) in self.spares.iter().enumerate() {
+            if let Spare::Card(ref card) = *spare {
+                match *card {
+                    Card::Flower(..) => continue,
+                    Card::Dragon(..) => {
+                        for (i, pile) in self.piles.iter().enumerate() {
+                            if pile.is_empty() {
+                                // Empty stack for the dragon king
+                                let mut new_board = self.clone();
+                                new_board.spares[j] = Spare::Empty;
+                                new_board.piles[i].push(card.clone());
+                                n.push(new_board);
+                                break; // Only care about first empty
+                            }
+                        }
+                    }
+                    Card::Value(ValueCard(s_suit, s_value)) => {
+                        let mut moved_to_empty = false;
+                        for (i, pile) in self.piles.iter().enumerate() {
+                            if pile.is_empty() {
+                                if moved_to_empty {
+                                    continue;
+                                }
+                                // Empty piles love cards
+                                let mut new_board = self.clone();
+                                new_board.spares[j] = Spare::Empty;
+                                new_board.piles[i].push(card.clone());
+                                n.push(new_board);
+                                moved_to_empty = true;
+                            } else if let Some(&Card::Value(ValueCard(p_suit, p_value))) =
+                                pile.last()
+                            {
+                                // Can place on value cards of different suit + 1
+                                if s_suit != p_suit && s_value + 1 == p_value {
+                                    let mut new_board = self.clone();
+                                    new_board.spares[j] = Spare::Empty;
+                                    new_board.piles[i].push(card.clone());
+                                    n.push(new_board)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // move from pile to another pile
+        for (i, a_pile) in self.piles.iter().enumerate() {
+            for (p, card) in a_pile.iter().enumerate().rev() {
+                match *card {
+                    Card::Value(..) => {
+                        let mut moved_to_empty = p == 0; // don't move base card to empty pile
+                        for (j, b_pile) in self.piles.iter().enumerate() {
+                            if i == j {
+                                continue;
+                            }
+                            if b_pile.is_empty() {
+                                if moved_to_empty {
+                                    continue;
+                                }
+                                let mut new_board = self.clone();
+                                let from_pile = &self.piles[i];
+                                new_board.piles[j].extend(from_pile[p..].iter().cloned());
+                                new_board.piles[i].truncate(p);
+                                n.push(new_board);
+                                moved_to_empty = true;
+                            } else if card.goes_on(b_pile.last().unwrap()) {
+                                let mut new_board = self.clone();
+                                let from_pile = &self.piles[i];
+                                new_board.piles[j].extend(from_pile[p..].iter().cloned());
+                                new_board.piles[i].truncate(p);
+                                n.push(new_board);
+                            }
+                        }
+                        // If the stack is no longer valid give up on this pile
+                        if p > 0 && !card.goes_on(&a_pile[p - 1]) {
+                            break;
+                        }
+                    }
+                    _ => break,
+                }
+            }
+        }
+
+        n
+    }
+
+    pub fn is_a_goodn(&self) -> bool {
+        if self.flower.is_none() {
+            return false;
+        }
+        if self.piles.iter().any(|s| !s.is_empty()) {
+            return false;
+        }
+
+        let ds_0 = self.spares[0].dragonstack_suit();
+        let ds_1 = self.spares[1].dragonstack_suit();
+        let ds_2 = self.spares[2].dragonstack_suit();
+        if ds_0.is_none() || ds_1.is_none() || ds_2.is_none() {
+            return false;
+        }
+        if ds_0 == ds_1 || ds_0 == ds_2 || ds_1 == ds_2 {
+            return false;
+        }
+
+        if self.places[0] != Place::Card(ValueCard(Suit::Black, 9)) {
+            return false;
+        }
+        if self.places[1] != Place::Card(ValueCard(Suit::Green, 9)) {
+            return false;
+        }
+        if self.places[2] != Place::Card(ValueCard(Suit::Red, 9)) {
+            return false;
+        }
+
+        true
+    }
 }
 
 fn all_the_cards() -> Vec<Card> {
@@ -293,5 +615,104 @@ mod test {
         let b = "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD";
         let board = Board::decode(b).unwrap();
         assert_eq!(b, board.encode());
+    }
+
+    #[test]
+    fn suitability() {
+        let a = ValueCard(Suit::Black, 1);
+        let b = ValueCard(Suit::Red, 2);
+        assert!(a.goes_on(&b));
+        assert!(!b.goes_on(&a));
+        let a = Card::Value(a);
+        let b = Card::Value(b);
+        assert!(a.goes_on(&b));
+        assert!(!b.goes_on(&a));
+    }
+
+    fn assert_neighours(board: &str, expected: Vec<&str>) {
+        let neighbours = Board::decode(board)
+            .unwrap()
+            .neighbours()
+            .iter()
+            .map(Board::encode)
+            .collect::<Vec<String>>();
+        assert_eq!(
+            neighbours, expected,
+            "actual != expected for neighbours of {}",
+            board
+        );
+    }
+
+    #[test]
+    fn whats_next() {
+        assert_neighours(
+            ";;;;;;;;;;;;b2b1;;",
+            vec![
+                ";;;;b1;;;;;;;;b2;;", // place b1
+                "b1;;;;;;;;;;;;b2;;", //spare b1
+                ";;;;;;;b1;;;;;b2;;", // unstack b1
+            ],
+        );
+        assert_neighours("b1;;;;;;;;;;;;;;", vec![";;;;b1;;;;;;;;;;"]);
+        assert_neighours(";;;ff;;;;;;;;;;;", vec![]);
+        // Must move flower, so can't be in spare
+        assert_neighours(";;;;;;;ff;;;;;;;", vec![";;;ff;;;;;;;;;;;"]);
+        // Moving from spare onto a thing or blank
+        assert_neighours(
+            "b5;g5;;;;;;g6;;;;;;;",
+            vec![
+                "b5;g5;g6;;;;;;;;;;;;", // g6 from pile to remaining spare
+                ";g5;;;;;;g6b5;;;;;;;", // stack b5 on g6
+                ";g5;;;;;;g6;b5;;;;;;", // b5 to empty pile
+                "b5;;;;;;;g6;g5;;;;;;", // g5 to empty pile
+            ],
+        );
+    }
+
+    #[test]
+    fn stacking() {
+        assert_neighours(
+            ";;;;;;;;;;;;r2b1;g3;",
+            vec![
+                ";;;;b1;;;;;;;;r2;g3;",
+                "b1;;;;;;;;;;;;r2;g3;",
+                "g3;;;;;;;;;;;;r2b1;;",
+                ";;;;;;;b1;;;;;r2;g3;",
+                ";;;;;;;;;;;;;g3r2b1;", // stack r2b1 onto g3
+            ],
+        );
+    }
+
+    #[test]
+    fn dragonstack() {
+        assert_neighours(
+            ";;rD;;;;;;;rD;rD;rD;r2b1;g3;",
+            vec![
+                "rDrDrDrD;;;;;;;;;;;;r2b1;g3;", // stack em up
+                ";;rD;;b1;;;;;rD;rD;rD;r2;g3;",
+                "rD;;rD;;;;;;;;rD;rD;r2b1;g3;",
+                "rD;;rD;;;;;;;rD;;rD;r2b1;g3;",
+                "rD;;rD;;;;;;;rD;rD;;r2b1;g3;",
+                "b1;;rD;;;;;;;rD;rD;rD;r2;g3;",
+                "g3;;rD;;;;;;;rD;rD;rD;r2b1;;",
+                ";;;;;;;rD;;rD;rD;rD;r2b1;g3;",
+                ";;rD;;;;;b1;;rD;rD;rD;r2;g3;",
+                ";;rD;;;;;;;rD;rD;rD;;g3r2b1;",
+            ],
+        );
+    }
+
+    #[test]
+    fn winner_winner() {
+        assert!(
+            Board::decode("rDrDrDrD;bDbDbDbD;gDgDgDgD;ff;b9;g9;r9;;;;;;;;")
+                .unwrap()
+                .is_a_goodn()
+        );
+        assert!(
+            !Board::decode("rDrDrDrD;bDbDbDbD;gDgDgDgD;ff;b9;g9;r8;;;;;;;;r9")
+                .unwrap()
+                .is_a_goodn()
+        );
     }
 }
