@@ -347,7 +347,6 @@ impl Board {
                         new_board.spares[i] = Spare::Empty;
                         new_board.places[j] = Place::Card(target.clone());
                         n.push(new_board);
-                        return n; // Flower is the only choice
                     }
                     _ => {}
                 }
@@ -681,7 +680,10 @@ mod test {
                 "b1;;;;;;;;;;;;b2;;", //spare b1
             ],
         );
-        assert_neighours("b1;;;;;;;;;;;;;;", vec![";;;;b1;;;;;;;;;;"]);
+        assert_neighours(
+            "b1;;;;;;;;;;;;;;",
+            vec![";;;;b1;;;;;;;;;;", ";;;;;;;b1;;;;;;;"],
+        );
         assert_neighours(";;;ff;;;;;;;;;;;", vec![]);
         // Must move flower, so can't be in spare
         assert_neighours(";;;;;;;ff;;;;;;;", vec![";;;ff;;;;;;;;;;;"]);
@@ -788,43 +790,43 @@ mod test {
                     path.iter().map(Board::encode).collect::<Vec<_>>(),
                     vec![
                         "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;;;;;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7r6b5;g7g4b4bDg3b2;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1b1;g7g4b4bDg3b2;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;b1;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3b2;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;b2;;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;b2;g1;;r8b7r6b5;r4g9bDr7;bDg5rDb6;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6;bDg5rD;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6;bDg5;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;bD;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b2;g1;;r8b7r6b5;r4g9bDr7b6g5;r9b8;b3g2;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b2;g2;;r8b7r6b5;r4g9bDr7b6g5;r9b8;b3;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b3;g2;;r8b7r6b5;r4g9bDr7b6g5;r9b8;;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b3;g3;;r8b7r6b5;r4g9bDr7b6g5;r9b8;;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bD;ff;b3;g3;;r8b7r6b5;r4g9bD;r9b8r7b6g5;;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b3;g3;;r8b7r6b5;r4g9;r9b8r7b6g5;;r3rDg8g6;rD;g7g4b4;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b4;g3;;r8b7r6b5;r4g9;r9b8r7b6g5;;r3rDg8g6;rD;g7g4;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g3;;r8b7r6;r4g9;r9b8r7b6g5;;r3rDg8g6;rD;g7g4;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g4;;r8b7r6;r4g9;r9b8r7b6g5;;r3rDg8g6;rD;g7;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g5;;r8b7r6;r4g9;r9b8r7b6;;r3rDg8g6;rD;g7;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g5;;r8b7r6;r4g9;r9b8r7;;r3rDg8g6;rD;g7;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g6;;r8b7r6;r4g9;r9b8r7;;r3rDg8;rD;g7;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g7;;r8b7r6;r4g9;r9b8r7;;r3rDg8;rD;;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g8;;r8b7r6;r4g9;r9b8r7;;r3rD;rD;;b9r2r5r1rD",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g9;;r8b7r6;r4;r9b8r7;;r3rD;rD;;b9r2r5r1rD",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;;r8b7r6;r4;r9b8r7;;r3;;;b9r2r5r1",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r8b7r6;r4;r9b8r7;;r3;;;b9r2r5",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r8b7r6;r4;r9b8r7;r5;r3;;;b9r2",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r2;r8b7r6;r4;r9b8r7;r5;r3;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r3;r8b7r6;r4;r9b8r7;r5;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r4;r8b7r6;;r9b8r7;r5;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r5;r8b7r6;;r9b8r7;;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r6;r8b7;;r9b8r7;;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r6;r8;;r9b8r7;;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r7;r8;;r9b8;;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r7;r8;;r9;;;;;b9",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r7;r8;;r9;;;;;",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;;;r9;;;;;",
+                        "gDgDgDgD;;;ff;;;;r6b5;r4g9bDr7b6;bDg5rD;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;rD;;ff;;;;r6b5;r4g9bDr7b6;bDg5;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;rD;;ff;;;;r6b5;r4g9bDr7b6g5;bD;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;;;;r6b5;r4g9bDr7b6g5;;b3g2r9b8;r3rDg8g6bD;rDg1b1r8b7;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1b1;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b1;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3b2;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b2;;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rDg1;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b2;g1;;r6b5;r4g9bDr7b6g5;r8b7;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b2;g1;;;r4g9bDr7b6g5;r8b7r6b5;b3g2r9b8;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b2;g1;;r9b8;r4g9bDr7b6g5;r8b7r6b5;b3g2;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b2;g2;;r9b8;r4g9bDr7b6g5;r8b7r6b5;b3;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b3;g2;;r9b8;r4g9bDr7b6g5;r8b7r6b5;;r3rDg8g6bD;rD;g7g4b4bDg3;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b3;g3;;r9b8;r4g9bDr7b6g5;r8b7r6b5;;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bD;ff;b3;g3;;r9b8;r4g9bD;r8b7r6b5;r7b6g5;r3rDg8g6bD;rD;g7g4b4bD;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b3;g3;;r9b8;r4g9;r8b7r6b5;r7b6g5;r3rDg8g6;rD;g7g4b4;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b4;g3;;r9b8;r4g9;r8b7r6b5;r7b6g5;r3rDg8g6;rD;g7g4;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g3;;r9b8;r4g9;r8b7r6;r7b6g5;r3rDg8g6;rD;g7g4;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g4;;r9b8;r4g9;r8b7r6;r7b6g5;r3rDg8g6;rD;g7;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b5;g5;;r9b8;r4g9;r8b7r6;r7b6;r3rDg8g6;rD;g7;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g5;;r9b8;r4g9;r8b7r6;r7;r3rDg8g6;rD;g7;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g6;;r9b8;r4g9;r8b7r6;r7;r3rDg8;rD;g7;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g7;;r9b8;r4g9;r8b7r6;r7;r3rDg8;rD;;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g8;;r9b8;r4g9;r8b7r6;r7;r3rD;rD;;b9r2r5r1rD",
+                        "gDgDgDgD;rD;bDbDbDbD;ff;b6;g9;;r9b8;r4;r8b7r6;r7;r3rD;rD;;b9r2r5r1rD",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;;r9b8;r4;r8b7r6;r7;r3;;;b9r2r5r1",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r9b8;r4;r8b7r6;r7;r3;;;b9r2r5",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r1;r9b8;r4;r8b7r6;r7;r3;r5;;b9r2",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r2;r9b8;r4;r8b7r6;r7;r3;r5;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r3;r9b8;r4;r8b7r6;r7;;r5;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r4;r9b8;;r8b7r6;r7;;r5;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r5;r9b8;;r8b7r6;r7;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b6;g9;r6;r9b8;;r8b7;r7;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r6;r9b8;;r8;r7;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r6;r9;;r8;r7;;;;b9",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r6;r9;;r8;r7;;;;",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r7;r9;;r8;;;;;",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;r9;;;;;;;",
                         "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r9;;;;;;;;"
                     ]
                 );
