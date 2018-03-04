@@ -700,20 +700,42 @@ mod test {
         );
     }
 
+    fn assert_moves(board: &str, expected: Vec<(&str, &str)>) {
+        let neighbours = Board::decode(board)
+            .unwrap()
+            .neighbours()
+            .into_iter()
+            .map(|(m, b)| (format!("{:?}", m), b.encode()))
+            .collect::<Vec<(String, String)>>();
+        let neighbours = neighbours
+            .iter()
+            .map(|&(ref a, ref b)| (b.as_str(), a.as_str()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            neighbours, expected,
+            "actual != expected for neighbours of {}",
+            board
+        );
+    }
+
     #[test]
     fn whats_next() {
-        assert_neighours(
+        assert_moves(
             ";;;;;;;;;;;;b4b3;;",
             vec![
-                ";;;;;;;b3;;;;;b4;;", // unstack b3
-                "b3;;;;;;;;;;;;b4;;", //spare b3
+                (
+                    ";;;;;;;b3;;;;;b4;;",
+                    "PileToPile(Value(ValueCard(Black, 3)), 5, 0)",
+                ),
+                (
+                    "b3;;;;;;;;;;;;b4;;",
+                    "PileToSpare(Value(ValueCard(Black, 3)), 5)",
+                ),
             ],
         );
-        assert_neighours(
+        assert_moves(
             ";;;;;;;;;;;;b2b1;;",
-            vec![
-                ";;;;b1;;;;;;;;b2;;", // place b1
-            ],
+            vec![(";;;;b1;;;;;;;;b2;;", "Place(ValueCard(Black, 1))")],
         );
         assert_neighours("b1;;;;;;;;;;;;;;", vec![";;;;b1;;;;;;;;;;"]);
         assert_neighours(";;;ff;;;;;;;;;;;", vec![]);
@@ -746,18 +768,42 @@ mod test {
 
     #[test]
     fn dragonstack() {
-        assert_neighours(
+        assert_moves(
             ";;rD;;;;;;;rD;rD;rD;r5b4;g6;",
             vec![
-                "rDrDrDrD;;;;;;;;;;;;r5b4;g6;", // stack em up
-                ";;;;;;;rD;;rD;rD;rD;r5b4;g6;",
-                ";;rD;;;;;b4;;rD;rD;rD;r5;g6;",
-                ";;rD;;;;;;;rD;rD;rD;;g6r5b4;",
-                "rD;;rD;;;;;;;;rD;rD;r5b4;g6;",
-                "rD;;rD;;;;;;;rD;;rD;r5b4;g6;",
-                "rD;;rD;;;;;;;rD;rD;;r5b4;g6;",
-                "b4;;rD;;;;;;;rD;rD;rD;r5;g6;",
-                "g6;;rD;;;;;;;rD;rD;rD;r5b4;;",
+                ("rDrDrDrD;;;;;;;;;;;;r5b4;g6;", "DragonStack(Red)"),
+                (
+                    ";;;;;;;rD;;rD;rD;rD;r5b4;g6;",
+                    "SpareToPile(Dragon(Red), 0)",
+                ),
+                (
+                    ";;rD;;;;;b4;;rD;rD;rD;r5;g6;",
+                    "PileToPile(Value(ValueCard(Black, 4)), 5, 0)",
+                ),
+                (
+                    ";;rD;;;;;;;rD;rD;rD;;g6r5b4;",
+                    "PileToPile(Value(ValueCard(Red, 5)), 5, 6)",
+                ),
+                (
+                    "rD;;rD;;;;;;;;rD;rD;r5b4;g6;",
+                    "PileToSpare(Dragon(Red), 2)",
+                ),
+                (
+                    "rD;;rD;;;;;;;rD;;rD;r5b4;g6;",
+                    "PileToSpare(Dragon(Red), 3)",
+                ),
+                (
+                    "rD;;rD;;;;;;;rD;rD;;r5b4;g6;",
+                    "PileToSpare(Dragon(Red), 4)",
+                ),
+                (
+                    "b4;;rD;;;;;;;rD;rD;rD;r5;g6;",
+                    "PileToSpare(Value(ValueCard(Black, 4)), 5)",
+                ),
+                (
+                    "g6;;rD;;;;;;;rD;rD;rD;r5b4;;",
+                    "PileToSpare(Value(ValueCard(Green, 6)), 6)",
+                ),
             ],
         );
     }
