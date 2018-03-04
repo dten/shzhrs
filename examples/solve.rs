@@ -4,7 +4,10 @@ extern crate shzhrs;
 use std::time::Instant;
 
 fn main() {
-    let _enabled = ansi_term::enable_ansi_support();
+    #[cfg(windows)]
+    {
+        ansi_term::enable_ansi_support().unwrap()
+    };
 
     println!("Enter board:");
     let mut input = String::new();
