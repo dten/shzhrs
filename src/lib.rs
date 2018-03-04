@@ -1028,4 +1028,75 @@ mod test {
             Some((path, cost)) => {}
         }
     }
+
+    #[test]
+    fn wasteful_dragon_moving() {
+        let b = ";;;;;;;b1b2r9g9g2;rDrDg7b8g3;r5g6ffb3rD;b9g5r2b7b4;r1g1r3gDrD;r8r7g4bDbD;b6gDgDbDb5;g8bDgDr6r4";
+        let board = Board::decode(b).unwrap();
+        match solve(&board) {
+            None => panic!("couldn't solve {}", b),
+            Some((path, cost)) => {
+                assert_eq!(cost, 22);
+                let moves = solution_to_moves(&path)
+                    .into_iter()
+                    .map(|m| format!("{:?}", m))
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    moves,
+                    vec![
+                        "PileToSpare(Dragon(Red), 4)",
+                        "PileToSpare(Dragon(Green), 4)",
+                        "PileToPile(Value(ValueCard(Red, 3)), 4, 3)",
+                        "Place(ValueCard(Green, 1))",
+                        "Place(ValueCard(Green, 2))",
+                        "Place(ValueCard(Green, 3))",
+                        "Place(ValueCard(Red, 1))",
+                        "PileToSpare(Value(ValueCard(Green, 9)), 0)",
+                        "PileToPile(Value(ValueCard(Red, 9)), 0, 4)",
+                        "PileToPile(Value(ValueCard(Black, 2)), 0, 3)",
+                        "Place(ValueCard(Black, 1))",
+                        "Place(ValueCard(Black, 2))",
+                        "PileToPile(Value(ValueCard(Black, 8)), 1, 4)",
+                        "PileToPile(Value(ValueCard(Green, 7)), 1, 4)",
+                        "SpareToPile(Dragon(Red), 0)",
+                        "PileToSpare(Dragon(Red), 1)",
+                        "DragonStack(Red)",
+                        "Place(ValueCard(Black, 3))",
+                        "Flower",
+                        "PileToPile(Value(ValueCard(Red, 3)), 3, 0)",
+                        "Place(ValueCard(Black, 4))",
+                        "Place(ValueCard(Black, 5))",
+                        "PileToPile(Value(ValueCard(Black, 7)), 3, 1)",
+                        "Place(ValueCard(Red, 2))",
+                        "Place(ValueCard(Red, 3))",
+                        "Place(ValueCard(Red, 4))",
+                        "PileToPile(Value(ValueCard(Green, 6)), 2, 1)",
+                        "Place(ValueCard(Red, 5))",
+                        "Place(ValueCard(Red, 6))",
+                        "SpareToPile(Dragon(Green), 0)",
+                        "PileToSpare(Dragon(Black), 6)", // <-- Should be pile to pile
+                        "SpareToPile(Dragon(Black), 2)", // <-- And then this doesn't exist
+                        "PileToSpare(Dragon(Green), 6)",
+                        "DragonStack(Green)",
+                        "Place(ValueCard(Black, 6))",
+                        "SpareToPile(Value(ValueCard(Green, 9)), 0)",
+                        "PileToSpare(Dragon(Black), 5)",
+                        "DragonStack(Black)",
+                        "Place(ValueCard(Green, 4))",
+                        "Place(ValueCard(Green, 5))",
+                        "Place(ValueCard(Green, 6))",
+                        "Place(ValueCard(Black, 7))",
+                        "Place(ValueCard(Green, 7))",
+                        "Place(ValueCard(Black, 8))",
+                        "Place(ValueCard(Black, 9))",
+                        "Place(ValueCard(Green, 8))",
+                        "Place(ValueCard(Green, 9))",
+                        "Place(ValueCard(Red, 7))",
+                        "Place(ValueCard(Red, 8))",
+                        "Place(ValueCard(Red, 9))",
+                    ]
+                );
+            }
+        }
+    }
 }
