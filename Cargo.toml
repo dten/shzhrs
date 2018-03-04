@@ -11,3 +11,8 @@ pathfinding = "0.6.11"
 [dev-dependencies]
 rayon = "1.0.0"
 ansi_term = "0.11"
+criterion = "0.2.1"
+
+[[bench]]
+name = "criterion_benchmark"
+harness = false
