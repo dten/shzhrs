@@ -1,6 +1,8 @@
-#shzhrs
+# shzhrs
 
 [![Travis CI Status](https://travis-ci.org/dten/shzhrs.svg?branch=master)](https://travis-ci.org/dten/shzhrs)
+
+*Shortest* path solved for Shenzhen Solitaire
 
 Usage:
 
@@ -173,3 +175,18 @@ rDrDrDrD;bDbDbDbD;gDgDgDgD;ff;b9;g9;r8;r9;;;;;;;
 Place Red 9
 rDrDrDrD;bDbDbDbD;gDgDgDgD;ff;b9;g9;r9;;;;;;;;
 ```
+
+## Results
+`cargo run --release --example endless` will run 1000 random problems and prints the time taken for each.
+
+| Percentile | Time to solve (or disprove) |
+| --- | --- |
+| 25 | 0.001035304s |
+| 50 | 0.002276648s |
+| 75 | 0.010018273s |
+| 85 | 0.023886391s |
+| 95 | 0.266564047s |
+| 99 | 2.631866001s |
+| 100 | 302.0584249s |
+
+`;;;;;;;g8bDgDr9r7;g1b8gDrDb4;r6rDb2r3r4;g3gDr1b9b5;bDg4b1b3b7;rDg2gDg9g7;b6r8rDr5bD;g5g6r2ffbD` took 302 seconds to find that it was impossible.
