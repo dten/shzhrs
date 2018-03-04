@@ -83,6 +83,28 @@ impl GoesOn for Card {
     }
 }
 
+use std::fmt;
+impl fmt::Display for Card {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Card::Flower(..) => write!(f, "Flower"),
+            _ => {
+                match self.suit() {
+                    Some(&Suit::Black) => write!(f, "Black ")?,
+                    Some(&Suit::Green) => write!(f, "Green ")?,
+                    Some(&Suit::Red) => write!(f, "Red ")?,
+                    _ => {}
+                }
+                match *self {
+                    Card::Dragon(..) => write!(f, "Dragon"),
+                    Card::Value(ValueCard(ref _s, ref v)) => write!(f, "{}", v),
+                    _ => unreachable!(),
+                }
+            }
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum Spare {
     Empty,
