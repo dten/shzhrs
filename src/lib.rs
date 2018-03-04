@@ -509,37 +509,32 @@ impl Board {
         // move from pile to another pile
         for (i, a_pile) in self.piles.iter().enumerate() {
             for (p, card) in a_pile.iter().enumerate().rev() {
-                match *card {
-                    Card::Value(..) => {
-                        let mut moved_to_empty = p == 0; // don't move base card to empty pile
-                        for (j, b_pile) in self.piles.iter().enumerate() {
-                            if i == j {
-                                continue;
-                            }
-                            if b_pile.is_empty() {
-                                if moved_to_empty {
-                                    continue;
-                                }
-                                let mut new_board = self.clone();
-                                let from_pile = &self.piles[i];
-                                new_board.piles[j].extend(from_pile[p..].iter().cloned());
-                                new_board.piles[i].truncate(p);
-                                n.push((Move::PileToPile(card.clone(), i, j), new_board));
-                                moved_to_empty = true;
-                            } else if card.goes_on(b_pile.last().unwrap()) {
-                                let mut new_board = self.clone();
-                                let from_pile = &self.piles[i];
-                                new_board.piles[j].extend(from_pile[p..].iter().cloned());
-                                new_board.piles[i].truncate(p);
-                                n.push((Move::PileToPile(card.clone(), i, j), new_board));
-                            }
-                        }
-                        // If the stack is no longer valid give up on this pile
-                        if p > 0 && !card.goes_on(&a_pile[p - 1]) {
-                            break;
-                        }
+                let mut moved_to_empty = p == 0; // don't move base card to empty pile
+                for (j, b_pile) in self.piles.iter().enumerate() {
+                    if i == j {
+                        continue;
                     }
-                    _ => break,
+                    if b_pile.is_empty() {
+                        if moved_to_empty {
+                            continue;
+                        }
+                        let mut new_board = self.clone();
+                        let from_pile = &self.piles[i];
+                        new_board.piles[j].extend(from_pile[p..].iter().cloned());
+                        new_board.piles[i].truncate(p);
+                        n.push((Move::PileToPile(card.clone(), i, j), new_board));
+                        moved_to_empty = true;
+                    } else if card.goes_on(b_pile.last().unwrap()) {
+                        let mut new_board = self.clone();
+                        let from_pile = &self.piles[i];
+                        new_board.piles[j].extend(from_pile[p..].iter().cloned());
+                        new_board.piles[i].truncate(p);
+                        n.push((Move::PileToPile(card.clone(), i, j), new_board));
+                    }
+                }
+                // If the stack is no longer valid give up on this pile
+                if p > 0 && !card.goes_on(&a_pile[p - 1]) {
+                    break;
                 }
             }
         }
@@ -850,9 +845,10 @@ mod test {
             "bD;bD;bD;;;;;;;;;r2bD;;;",
             vec![
                 "bDbDbDbD;;;;;;;;;;;r2;;;", // stack em up
-                ";bD;bD;;;;;bD;;;;r2bD;;;",
-                "bD;;bD;;;;;bD;;;;r2bD;;;",
-                "bD;bD;;;;;;bD;;;;r2bD;;;",
+                ";bD;bD;;;;;bD;;;;r2bD;;;", // from spare 0
+                "bD;;bD;;;;;bD;;;;r2bD;;;", // from spare 1
+                "bD;bD;;;;;;bD;;;;r2bD;;;", // from spare 2
+                "bD;bD;bD;;;;;bD;;;;r2;;;", // from pile 4
             ],
         );
     }
@@ -897,7 +893,7 @@ mod test {
         match solve(&board) {
             None => panic!("couldn't solve {}", b),
             Some((path, cost)) => {
-                assert_eq!(cost, 16);
+                assert_eq!(cost, 18);
                 assert_eq!(
                     path.iter().map(Board::encode).collect::<Vec<_>>(),
                     vec![
@@ -915,32 +911,32 @@ mod test {
                         "gDgDgDgD;rD;r5;ff;b2;g2;r2;r9b8;r4g9bDr7;bDg5rDb6;b3;r3rDg8g6bD;rD;g7g4b4bDg3;b9r8b7r6b5",
                         "gDgDgDgD;rD;r5;ff;b3;g2;r2;r9b8;r4g9bDr7;bDg5rDb6;;r3rDg8g6bD;rD;g7g4b4bDg3;b9r8b7r6b5",
                         "gDgDgDgD;rD;r5;ff;b3;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;;r3rDg8g6bD;rD;g7g4b4bD;b9r8b7r6b5",
-                        "gDgDgDgD;rD;;ff;b3;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7g4b4bD;b9r8b7r6b5",
-                        "gDgDgDgD;rD;bD;ff;b3;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7g4b4;b9r8b7r6b5",
-                        "gDgDgDgD;rD;bD;ff;b4;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7g4;b9r8b7r6b5",
-                        "gDgDgDgD;rD;bD;ff;b5;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7g4;b9r8b7r6",
-                        "gDgDgDgD;rD;bD;ff;b5;g4;r2;r9b8;r4g9bDr7;bDg5rDb6;r5;r3rDg8g6bD;rD;g7;b9r8b7r6",
-                        "gDgDgDgD;rD;bD;ff;b6;g4;r2;r9b8;r4g9bDr7;bDg5rD;r5;r3rDg8g6bD;rD;g7;b9r8b7r6",
-                        "gDgDgDgD;rD;bD;ff;b6;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;g7;b9r8b7r6",
-                        "gDgDgDgD;rD;bD;ff;b6;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;g7r6;b9r8b7",
-                        "gDgDgDgD;rD;bD;ff;b7;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;g7r6;b9r8",
-                        "gDgDgDgD;rD;bD;ff;b7;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;;b9r8g7r6",
-                        "gDgDgDgD;;bD;ff;b7;g4;r2;r9b8r7;r4g9bD;bDg5rD;r5;r3rDg8g6bD;rD;rD;b9r8g7r6",
-                        "gDgDgDgD;rD;bD;ff;b7;g4;r2;r9b8r7;r4g9bD;bDg5;r5;r3rDg8g6bD;rD;rD;b9r8g7r6",
-                        "gDgDgDgD;rD;bD;ff;b7;g5;r2;r9b8r7;r4g9bD;bD;r5;r3rDg8g6bD;rD;rD;b9r8g7r6",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b7;g5;r2;r9b8r7;r4g9;;r5;r3rDg8g6;rD;rD;b9r8g7r6",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b7;g6;r2;r9b8r7;r4g9;;r5;r3rDg8;rD;rD;b9r8g7r6",
-                        "gDgDgDgD;rD;bDbDbDbD;ff;b7;g6;r2;r9b8r7;r4g9;g8;r5;r3rD;rD;rD;b9r8g7r6",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r2;r9b8r7;r4g9;g8;r5;r3;;;b9r8g7r6",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r3;r9b8r7;r4g9;g8;r5;;;;b9r8g7r6",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r3;r9b8r7;r4;g8;r5;g9;;;b9r8g7r6",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r4;r9b8r7;;g8;r5;g9;;;b9r8g7r6",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r5;r9b8r7;;g8;;g9;;;b9r8g7r6",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g6;r6;r9b8r7;;g8;;g9;;;b9r8g7",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g7;r6;r9b8r7;;g8;;g9;;;b9r8",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g8;r6;r9b8r7;;;;g9;;;b9r8",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r6;r9b8r7;;;;;;;b9r8",
-                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b7;g9;r7;r9b8;;;;;;;b9r8",
+                        "gDgDgDgD;rD;r5;ff;b3;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;bD;r3rDg8g6bD;rD;g7g4b4;b9r8b7r6b5",
+                        "gDgDgDgD;rD;r5;ff;b4;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;bD;r3rDg8g6bD;rD;g7g4;b9r8b7r6b5",
+                        "gDgDgDgD;rD;r5;ff;b5;g3;r2;r9b8;r4g9bDr7;bDg5rDb6;bD;r3rDg8g6bD;rD;g7g4;b9r8b7r6",
+                        "gDgDgDgD;rD;r5;ff;b5;g4;r2;r9b8;r4g9bDr7;bDg5rDb6;bD;r3rDg8g6bD;rD;g7;b9r8b7r6",
+                        "gDgDgDgD;rD;r5;ff;b6;g4;r2;r9b8;r4g9bDr7;bDg5rD;bD;r3rDg8g6bD;rD;g7;b9r8b7r6",
+                        "gDgDgDgD;rD;r5;ff;b6;g4;r2;r9b8;r4g9bDr7;bDg5rD;bD;r3rDg8g6bD;rD;g7r6;b9r8b7",
+                        "gDgDgDgD;rD;r5;ff;b7;g4;r2;r9b8;r4g9bDr7;bDg5rD;bD;r3rDg8g6bD;rD;g7r6;b9r8",
+                        "gDgDgDgD;rD;r5;ff;b8;g4;r2;r9;r4g9bDr7;bDg5rD;bD;r3rDg8g6bD;rD;g7r6;b9r8",
+                        "gDgDgDgD;rD;r5;ff;b8;g4;r2;r9;r4g9bDr7;bDg5rD;bD;r3rDg8g6bD;rD;;b9r8g7r6",
+                        "gDgDgDgD;rD;r5;ff;b8;g4;r2;r9;r4g9bDr7;bDg5rD;bD;r3rDg8g6;rD;bD;b9r8g7r6",
+                        "gDgDgDgD;rD;r5;ff;b8;g4;r2;r9;r4g9bDr7g6;bDg5rD;bD;r3rDg8;rD;bD;b9r8g7r6",
+                        "gDgDgDgD;rD;r5;ff;b8;g4;r2;r9g8;r4g9bDr7g6;bDg5rD;bD;r3rD;rD;bD;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;r5;ff;b8;g4;r2;r9g8;r4g9bDr7g6;bDg5;bD;r3;;bD;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;r5;ff;b8;g5;r2;r9g8;r4g9bDr7g6;bD;bD;r3;;bD;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;r5;ff;b8;g5;r3;r9g8;r4g9bDr7g6;bD;bD;;;bD;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;r5;ff;b8;g6;r3;r9g8;r4g9bDr7;bD;bD;;;bD;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;;ff;b8;g6;r3;r9g8;r4g9bDr7;bD;bD;r5;;bD;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;;ff;b8;g6;r3;r9g8;r4g9bD;bD;bD;r5;r7;bD;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g6;r3;r9g8;r4g9;;;r5;r7;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g6;r3;r9g8;r4;g9;;r5;r7;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g6;r4;r9g8;;g9;;r5;r7;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g6;r5;r9g8;;g9;;;r7;;b9r8g7r6",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g6;r6;r9g8;;g9;;;r7;;b9r8g7",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g7;r6;r9g8;;g9;;;r7;;b9r8",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g8;r6;r9;;g9;;;r7;;b9r8",
+                        "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r6;r9;;;;;r7;;b9r8",
                         "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r7;r9;;;;;;;b9r8",
                         "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r8;r9;;;;;;;b9",
                         "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;r9;;;;;;;",
@@ -967,25 +963,26 @@ mod test {
                         "Place(ValueCard(Green, 2))",
                         "Place(ValueCard(Black, 3))",
                         "Place(ValueCard(Green, 3))",
-                        "SpareToPile(Value(ValueCard(Red, 5)), 3)",
-                        "PileToSpare(Dragon(Black), 6)",
+                        "PileToPile(Dragon(Black), 6, 3)",
                         "Place(ValueCard(Black, 4))",
                         "Place(ValueCard(Black, 5))",
                         "Place(ValueCard(Green, 4))",
                         "Place(ValueCard(Black, 6))",
-                        "PileToPile(Value(ValueCard(Red, 7)), 1, 0)",
                         "PileToPile(Value(ValueCard(Red, 6)), 7, 6)",
                         "Place(ValueCard(Black, 7))",
+                        "Place(ValueCard(Black, 8))",
                         "PileToPile(Value(ValueCard(Green, 7)), 6, 7)",
-                        "SpareToPile(Dragon(Red), 6)",
-                        "PileToSpare(Dragon(Red), 2)",
-                        "Place(ValueCard(Green, 5))",
-                        "DragonStack(Black)",
-                        "Place(ValueCard(Green, 6))",
-                        "PileToPile(Value(ValueCard(Green, 8)), 4, 2)",
+                        "PileToPile(Dragon(Black), 4, 6)",
+                        "PileToPile(Value(ValueCard(Green, 6)), 4, 1)",
+                        "PileToPile(Value(ValueCard(Green, 8)), 4, 0)",
                         "DragonStack(Red)",
+                        "Place(ValueCard(Green, 5))",
                         "Place(ValueCard(Red, 3))",
-                        "PileToPile(Value(ValueCard(Green, 9)), 1, 4)",
+                        "Place(ValueCard(Green, 6))",
+                        "SpareToPile(Value(ValueCard(Red, 5)), 4)",
+                        "PileToPile(Value(ValueCard(Red, 7)), 1, 5)",
+                        "DragonStack(Black)",
+                        "PileToPile(Value(ValueCard(Green, 9)), 1, 2)",
                         "Place(ValueCard(Red, 4))",
                         "Place(ValueCard(Red, 5))",
                         "Place(ValueCard(Red, 6))",
@@ -993,7 +990,6 @@ mod test {
                         "Place(ValueCard(Green, 8))",
                         "Place(ValueCard(Green, 9))",
                         "Place(ValueCard(Red, 7))",
-                        "Place(ValueCard(Black, 8))",
                         "Place(ValueCard(Red, 8))",
                         "Place(ValueCard(Black, 9))",
                         "Place(ValueCard(Red, 9))",
@@ -1036,7 +1032,6 @@ mod test {
         match solve(&board) {
             None => panic!("couldn't solve {}", b),
             Some((path, cost)) => {
-                assert_eq!(cost, 22);
                 let moves = solution_to_moves(&path)
                     .into_iter()
                     .map(|m| format!("{:?}", m))
@@ -1058,8 +1053,7 @@ mod test {
                         "Place(ValueCard(Black, 2))",
                         "PileToPile(Value(ValueCard(Black, 8)), 1, 4)",
                         "PileToPile(Value(ValueCard(Green, 7)), 1, 4)",
-                        "SpareToPile(Dragon(Red), 0)",
-                        "PileToSpare(Dragon(Red), 1)",
+                        "PileToPile(Dragon(Red), 1, 0)",
                         "DragonStack(Red)",
                         "Place(ValueCard(Black, 3))",
                         "Flower",
@@ -1070,18 +1064,16 @@ mod test {
                         "Place(ValueCard(Red, 2))",
                         "Place(ValueCard(Red, 3))",
                         "Place(ValueCard(Red, 4))",
-                        "PileToPile(Value(ValueCard(Green, 6)), 2, 1)",
+                        "PileToPile(Value(ValueCard(Green, 6)), 2, 0)",
                         "Place(ValueCard(Red, 5))",
                         "Place(ValueCard(Red, 6))",
-                        "SpareToPile(Dragon(Green), 0)",
-                        "PileToSpare(Dragon(Black), 6)", // <-- Should be pile to pile
-                        "SpareToPile(Dragon(Black), 2)", // <-- And then this doesn't exist
-                        "PileToSpare(Dragon(Green), 6)",
+                        "PileToPile(Dragon(Black), 6, 2)",
+                        "PileToPile(Value(ValueCard(Green, 6)), 0, 1)",
+                        "PileToPile(Dragon(Green), 6, 0)",
                         "DragonStack(Green)",
                         "Place(ValueCard(Black, 6))",
-                        "SpareToPile(Value(ValueCard(Green, 9)), 0)",
-                        "PileToSpare(Dragon(Black), 5)",
-                        "DragonStack(Black)",
+                        "PileToPile(Dragon(Black), 5, 0)",
+                        "PileToPile(Dragon(Black), 5, 6)",
                         "Place(ValueCard(Green, 4))",
                         "Place(ValueCard(Green, 5))",
                         "Place(ValueCard(Green, 6))",
@@ -1089,11 +1081,13 @@ mod test {
                         "Place(ValueCard(Green, 7))",
                         "Place(ValueCard(Black, 8))",
                         "Place(ValueCard(Black, 9))",
-                        "Place(ValueCard(Green, 8))",
-                        "Place(ValueCard(Green, 9))",
                         "Place(ValueCard(Red, 7))",
                         "Place(ValueCard(Red, 8))",
                         "Place(ValueCard(Red, 9))",
+                        "SpareToPile(Value(ValueCard(Green, 9)), 1)",
+                        "DragonStack(Black)",
+                        "Place(ValueCard(Green, 8))",
+                        "Place(ValueCard(Green, 9))",
                     ]
                 );
             }
