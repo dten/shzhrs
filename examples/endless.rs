@@ -19,7 +19,7 @@ fn main() {
             match shzhrs::solve(&board) {
                 None => {
                     let time = Instant::now() - start;
-                    return (false, time, encoded);
+                    (false, time, encoded)
                 }
                 Some((_path, _cost)) => {
                     let time = Instant::now() - start;
@@ -28,7 +28,7 @@ fn main() {
                     //     "solved {:?}\n{:#?}\ncost: {} time: {:?}",
                     //     encoded, boards, cost, time
                     // );
-                    return (true, time, encoded);
+                    (true, time, encoded)
                 }
             }
         })

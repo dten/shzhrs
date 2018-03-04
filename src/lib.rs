@@ -44,13 +44,12 @@ trait GoesOn {
 impl GoesOn for ValueCard {
     fn goes_on(&self, b: &ValueCard) -> bool {
         use Card::*;
-        let success = match (self, b) {
+        match (self, b) {
             (&ValueCard(suit_a, v_a), &ValueCard(suit_b, v_b)) => {
                 suit_a != suit_b && v_a + 1 == v_b
             }
             _ => false,
-        };
-        success
+        }
     }
 }
 
@@ -68,8 +67,7 @@ impl Card {
     pub fn suit(&self) -> Option<&Suit> {
         use Card::*;
         match *self {
-            Value(ValueCard(ref suit, _)) => Some(suit),
-            Dragon(ref suit) => Some(suit),
+            Value(ValueCard(ref suit, _)) | Dragon(ref suit) => Some(suit),
             _ => None,
         }
     }
