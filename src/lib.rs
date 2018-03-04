@@ -641,6 +641,22 @@ pub fn solve(board: &Board) -> Option<(Vec<Board>, i64)> {
     astar(board, neighbours, heuristic, success)
 }
 
+pub fn solution_to_moves(boards: &Vec<Board>) -> Vec<Move> {
+    let mut moves = vec![];
+    for i in 0..boards.len() - 1 {
+        let m = boards[i]
+            .neighbours()
+            .into_iter()
+            .find(|&(_, ref b)| b == &boards[i + 1])
+            .map(|p| p.0);
+        match m {
+            Some(m) => moves.push(m),
+            None => panic!("you lied this isn't a solution!"),
+        }
+    }
+    moves
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -909,6 +925,58 @@ mod test {
                         "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b8;g9;r8;r9;;;;;;;b9",
                         "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r8;r9;;;;;;;",
                         "gDgDgDgD;rDrDrDrD;bDbDbDbD;ff;b9;g9;r9;;;;;;;;"
+                    ]
+                );
+                let moves = solution_to_moves(&path)
+                    .into_iter()
+                    .map(|m| format!("{:?}", m))
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    moves,
+                    vec![
+                        "PileToSpare(Dragon(Red), 7)",
+                        "Place(ValueCard(Red, 1))",
+                        "PileToSpare(Value(ValueCard(Red, 5)), 7)",
+                        "Place(ValueCard(Red, 2))",
+                        "PileToPile(Value(ValueCard(Red, 8)), 5, 7)",
+                        "Place(ValueCard(Black, 1))",
+                        "Place(ValueCard(Black, 2))",
+                        "Place(ValueCard(Green, 1))",
+                        "PileToPile(Value(ValueCard(Red, 6)), 0, 7)",
+                        "PileToPile(Value(ValueCard(Red, 9)), 3, 0)",
+                        "Place(ValueCard(Green, 2))",
+                        "Place(ValueCard(Black, 3))",
+                        "Place(ValueCard(Green, 3))",
+                        "SpareToPile(Value(ValueCard(Red, 5)), 3)",
+                        "PileToSpare(Dragon(Black), 6)",
+                        "Place(ValueCard(Black, 4))",
+                        "Place(ValueCard(Black, 5))",
+                        "Place(ValueCard(Green, 4))",
+                        "Place(ValueCard(Black, 6))",
+                        "PileToPile(Value(ValueCard(Red, 7)), 1, 0)",
+                        "PileToPile(Value(ValueCard(Red, 6)), 7, 6)",
+                        "Place(ValueCard(Black, 7))",
+                        "PileToPile(Value(ValueCard(Green, 7)), 6, 7)",
+                        "SpareToPile(Dragon(Red), 6)",
+                        "PileToSpare(Dragon(Red), 2)",
+                        "Place(ValueCard(Green, 5))",
+                        "DragonStack(Black)",
+                        "Place(ValueCard(Green, 6))",
+                        "PileToPile(Value(ValueCard(Green, 8)), 4, 2)",
+                        "DragonStack(Red)",
+                        "Place(ValueCard(Red, 3))",
+                        "PileToPile(Value(ValueCard(Green, 9)), 1, 4)",
+                        "Place(ValueCard(Red, 4))",
+                        "Place(ValueCard(Red, 5))",
+                        "Place(ValueCard(Red, 6))",
+                        "Place(ValueCard(Green, 7))",
+                        "Place(ValueCard(Green, 8))",
+                        "Place(ValueCard(Green, 9))",
+                        "Place(ValueCard(Red, 7))",
+                        "Place(ValueCard(Black, 8))",
+                        "Place(ValueCard(Red, 8))",
+                        "Place(ValueCard(Black, 9))",
+                        "Place(ValueCard(Red, 9))",
                     ]
                 );
             }
