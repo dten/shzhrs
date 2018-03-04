@@ -644,16 +644,18 @@ pub fn new_game() -> Board {
 }
 
 pub fn solve(board: &Board) -> Option<(Vec<Board>, i64)> {
-    let mut neighbours = |b: &Board| {
+    use std::rc::Rc;
+    let mut neighbours = |b: &Rc<Board>| {
         //println!("neighbours of {}", b.encode());
         let n = Board::neighbours(b);
         let count = n.len();
         n.into_iter()
-            .map(move |(_m, b)| (b, if count == 1 { 0 } else { 1 }))
+            .map(move |(_m, b)| (Rc::new(b), if count == 1 { 0 } else { 1 }))
     };
-    let mut heuristic = |b: &Board| b.work_to_do();
-    let mut success = |b: &Board| b.is_a_goodn();
-    astar(board, neighbours, heuristic, success)
+    let mut heuristic = |b: &Rc<Board>| b.work_to_do();
+    let mut success = |b: &Rc<Board>| b.is_a_goodn();
+    astar(&Rc::new(board.clone()), neighbours, heuristic, success)
+        .map(|(b, c)| (b.into_iter().map(|b| (*b).clone()).collect(), c))
 }
 
 pub fn solution_to_moves(boards: &Vec<Board>) -> Vec<Move> {
