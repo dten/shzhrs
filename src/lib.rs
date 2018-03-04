@@ -114,6 +114,16 @@ pub enum Place {
     Card(ValueCard),
 }
 
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum Move {
+    Place(ValueCard),
+    PileToSpare(Card, usize),
+    SpareToPile(Card, usize),
+    PileToPile(Card, usize, usize),
+    DragonStack(Suit),
+    Flower(),
+}
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct Board {
     spares: [Spare; 3],
@@ -300,8 +310,8 @@ impl Board {
         })
     }
 
-    pub fn neighbours(&self) -> Vec<Board> {
-        let mut n: Vec<Board> = vec![];
+    pub fn neighbours(&self) -> Vec<(Move, Board)> {
+        let mut n: Vec<(Move, Board)> = vec![];
 
         // move flower to flowerspot
         if self.flower == None {
@@ -312,7 +322,7 @@ impl Board {
                         let mut new_board = self.clone();
                         new_board.piles[i].pop();
                         new_board.flower = Some(FlowerCard);
-                        n.push(new_board);
+                        n.push((Move::Flower(), new_board));
                         return n; // Flower is the only choice
                     }
                     _ => {}
@@ -344,9 +354,9 @@ impl Board {
                         new_board.piles[i].pop();
                         new_board.places[j] = Place::Card(target.clone());
                         if force {
-                            return vec![new_board];
+                            return vec![(Move::Place(target), new_board)];
                         } else {
-                            n.push(new_board);
+                            n.push((Move::Place(target.clone()), new_board));
                         }
                     }
                     _ => {}
@@ -360,9 +370,9 @@ impl Board {
                         new_board.spares[i] = Spare::Empty;
                         new_board.places[j] = Place::Card(target.clone());
                         if force {
-                            return vec![new_board];
+                            return vec![(Move::Place(target), new_board)];
                         } else {
-                            n.push(new_board);
+                            n.push((Move::Place(target.clone()), new_board));
                         }
                     }
                     _ => {}
@@ -426,7 +436,7 @@ impl Board {
             }
             // Stack stack stack
             new_board.spares[space_to_stack_to] = Spare::DragonStack(suit_of_desire);
-            n.push(new_board);
+            n.push((Move::DragonStack(suit_of_desire), new_board));
         }
 
         // move from spares to piles
@@ -441,7 +451,7 @@ impl Board {
                                 let mut new_board = self.clone();
                                 new_board.spares[j] = Spare::Empty;
                                 new_board.piles[i].push(card.clone());
-                                n.push(new_board);
+                                n.push((Move::SpareToPile(card.clone(), i), new_board));
                                 break; // Only care about first empty
                             }
                         }
@@ -457,7 +467,7 @@ impl Board {
                                 let mut new_board = self.clone();
                                 new_board.spares[j] = Spare::Empty;
                                 new_board.piles[i].push(card.clone());
-                                n.push(new_board);
+                                n.push((Move::SpareToPile(card.clone(), i), new_board));
                                 moved_to_empty = true;
                             } else if let Some(&Card::Value(ValueCard(p_suit, p_value))) =
                                 pile.last()
@@ -467,7 +477,7 @@ impl Board {
                                     let mut new_board = self.clone();
                                     new_board.spares[j] = Spare::Empty;
                                     new_board.piles[i].push(card.clone());
-                                    n.push(new_board);
+                                    n.push((Move::SpareToPile(card.clone(), i), new_board));
                                 }
                             }
                         }
@@ -494,14 +504,14 @@ impl Board {
                                 let from_pile = &self.piles[i];
                                 new_board.piles[j].extend(from_pile[p..].iter().cloned());
                                 new_board.piles[i].truncate(p);
-                                n.push(new_board);
+                                n.push((Move::PileToPile(card.clone(), i, j), new_board));
                                 moved_to_empty = true;
                             } else if card.goes_on(b_pile.last().unwrap()) {
                                 let mut new_board = self.clone();
                                 let from_pile = &self.piles[i];
                                 new_board.piles[j].extend(from_pile[p..].iter().cloned());
                                 new_board.piles[i].truncate(p);
-                                n.push(new_board);
+                                n.push((Move::PileToPile(card.clone(), i, j), new_board));
                             }
                         }
                         // If the stack is no longer valid give up on this pile
@@ -522,8 +532,8 @@ impl Board {
                         Some(card) => {
                             let mut new_board = self.clone();
                             let moved = new_board.piles[i].pop().unwrap();
-                            new_board.spares[j] = Spare::Card(moved);
-                            n.push(new_board);
+                            new_board.spares[j] = Spare::Card(moved.clone());
+                            n.push((Move::PileToSpare(moved, i), new_board));
                         }
                         _ => {}
                     }
@@ -624,7 +634,7 @@ pub fn solve(board: &Board) -> Option<(Vec<Board>, i64)> {
         let n = Board::neighbours(b);
         let count = n.len();
         n.into_iter()
-            .map(move |b| (b, if count == 1 { 0 } else { 1 }))
+            .map(move |(_m, b)| (b, if count == 1 { 0 } else { 1 }))
     };
     let mut heuristic = |b: &Board| b.work_to_do();
     let mut success = |b: &Board| b.is_a_goodn();
@@ -680,8 +690,8 @@ mod test {
         let neighbours = Board::decode(board)
             .unwrap()
             .neighbours()
-            .iter()
-            .map(Board::encode)
+            .into_iter()
+            .map(|(_m, b)| b.encode())
             .collect::<Vec<String>>();
         assert_eq!(
             neighbours, expected,
